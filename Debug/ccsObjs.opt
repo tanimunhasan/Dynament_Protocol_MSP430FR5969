@@ -1,0 +1,8 @@
+"./main.obj"
+"./src/DynamentComms.obj"
+"./src/ModbusComms.obj"
+"./src/comms.obj"
+"../lnk_msp430fr5969.cmd"
+-llibmpu_init.a
+-llibmath.a
+-llibc.a
