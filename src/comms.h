@@ -19,28 +19,24 @@ extern volatile bool messageTimeOut;
 
 
 // Circular buffer for UART reception
-extern uint8_t g_aucRxBuffer[P2P_BUFFER_SIZE]  __attribute__((aligned(16)));
-extern volatile uint16_t g_uiRxBufferGet;
-extern volatile uint16_t g_uiRxBufferPut;
+extern uint8_t RX_Buffer[P2P_BUFFER_SIZE]  __attribute__((aligned(16)));
+extern volatile uint16_t head;
+extern volatile uint16_t tail;
 
-enum { p2pRxNone, p2pRxOk, p2pRxError };
+enum
+{
+    p2pRxNone,
+    p2pRxOk,
+    p2pRxError
+};
 
 //UART initialization function
 void p2pTxData(uint8_t* pucData, int len);
 void p2pTxByte(uint8_t ucData);
 uint8_t p2pRxByte(uint8_t* pucData);
 
-void UART_sendHex(uint8_t byte);
-void UART_sendChar(char c);
+//uint8_t UART_Read(void);
 
-void UART_sendString(const char *str);
-
-void UART_sendFloat(float value);
-// Function to read a bybte from the circular buffer
-void UART_sendPointer(void *ptr);
-
-uint8_t UART_Read(void);
-void printInt(int num);
 
 //UART interrupt service routine
 

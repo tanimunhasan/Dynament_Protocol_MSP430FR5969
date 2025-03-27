@@ -2,6 +2,8 @@
 "./src/DynamentComms.obj"
 "./src/ModbusComms.obj"
 "./src/comms.obj"
+"./src/studiolib.obj"
+"./src/uart.obj"
 "../lnk_msp430fr5969.cmd"
 -llibmpu_init.a
 -llibmath.a

@@ -23,6 +23,8 @@ src/DynamentComms.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-msp430_21.6.1.LTS
 src/DynamentComms.obj: C:/Users/tanim/OneDrive/Desktop/Git\ Project/Dynament_Protocol/src/ModbusComms.h
 src/DynamentComms.obj: C:/Users/tanim/OneDrive/Desktop/Git\ Project/Dynament_Protocol/src/comms.h
 src/DynamentComms.obj: C:/Users/tanim/OneDrive/Desktop/Git\ Project/Dynament_Protocol/main.h
+src/DynamentComms.obj: ../src/uart.h
+src/DynamentComms.obj: ../src/studiolib.h
 
 ../src/DynamentComms.c:
 
@@ -69,4 +71,8 @@ C:/Users/tanim/OneDrive/Desktop/Git\ Project/Dynament_Protocol/src/ModbusComms.h
 C:/Users/tanim/OneDrive/Desktop/Git\ Project/Dynament_Protocol/src/comms.h:
 
 C:/Users/tanim/OneDrive/Desktop/Git\ Project/Dynament_Protocol/main.h:
+
+../src/uart.h:
+
+../src/studiolib.h:
 

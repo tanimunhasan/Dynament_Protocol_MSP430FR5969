@@ -14,6 +14,8 @@ ORDERED_OBJS += \
 "./src/DynamentComms.obj" \
 "./src/ModbusComms.obj" \
 "./src/comms.obj" \
+"./src/studiolib.obj" \
+"./src/uart.obj" \
 "../lnk_msp430fr5969.cmd" \
 $(GEN_CMDS__FLAG) \
 -llibmpu_init.a \
@@ -148,8 +150,8 @@ Dynament_Protocol.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 # Other Targets
 clean:
 	-$(RM) $(EXE_OUTPUTS__QUOTED)
-	-$(RM) "main.obj" "src\DynamentComms.obj" "src\ModbusComms.obj" "src\comms.obj" 
-	-$(RM) "main.d" "src\DynamentComms.d" "src\ModbusComms.d" "src\comms.d" 
+	-$(RM) "main.obj" "src\DynamentComms.obj" "src\ModbusComms.obj" "src\comms.obj" "src\studiolib.obj" "src\uart.obj" 
+	-$(RM) "main.d" "src\DynamentComms.d" "src\ModbusComms.d" "src\comms.d" "src\studiolib.d" "src\uart.d" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

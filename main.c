@@ -5,14 +5,18 @@
 #include "src/DynamentComms.h"
 #include "src/ModbusComms.h"
 #include "src/comms.h"
+#include "src/uart.h"
+#include "src/studiolib.h"
 #include "stdbool.h"
 
 /**
  * main.c
  * Considering 1MHz
  */
-#define POLL_COUNT              8
+#define POLL_COUNT              10
 volatile int pollCounter = POLL_COUNT;  // Define pollCounter
+
+#define WATCHDOG_INTERVAL_MS    1000    // Define the watchdog timer interval in milliseconds (e.g., 1000 ms)
 
 void clockConfigure(void)
 {
@@ -30,6 +34,13 @@ void Timer_Init(void)
     TA0CTL = TASSEL_2 | MC_1 | TACLR | ID_3; // SMCLK, Up mode, /8 divider
 }
 
+void Timer1_A_Setup(void)
+{
+    TA1CCTL0 = CCIE;         // Enable Timer1_A interrupt
+    TA1CCR0 = 1000;          // 1 ms interval (1 MHz / 1000 = 1ms)
+    TA1CTL = TASSEL_2 | MC_1 | ID_0 | TACLR;  // SMCLK (1 MHz), Up mode, No divider, Clear timer
+}
+
 
 // Timer flag (set in timer ISR)
 volatile bool timerFlag = false;
@@ -41,7 +52,7 @@ void RequestGasReading(void);
 void ReadingReceived(int status, float value);
 void DualReadingReceived(int status, float reading1, float reading2);
 void Watchdog(void);
-void delay_ms(unsigned int ms);
+
 
 // These communications functions are assumed to be defined elsewhere:
 
@@ -50,103 +61,53 @@ extern void DynamentCommsHandler(void);
 extern void ModbusCommsHandler(void);
 extern void RequestLiveData2(void (*cb)(int, float, float));
 
-//--------------------------------------------------------------------------
-// Main Function
-void uart_init(void)
-{
-    // Configure UART pins
-
-    //-----eUSCI_A0 for USB Terminal (P2.0 TX, P2.1 RX) ---------------
-    P2SEL1 |= BIT0 | BIT1;      // TX: P2.0, RX: P2.1
-    P2SEL0 &= ~(BIT0 | BIT1);
-
-    // Put eUSCI_A0 into reset mode before configuring
-    UCA0CTLW0 = UCSWRST;
-    UCA0CTLW0 |= UCSSEL__SMCLK;  // Select SMCLK as clock source
-
-    // ---------- eUSCI_A1 for N2O Sensor (P2.5 TX, P2.6 RX) ----------
-    P2SEL1 |= BIT5 | BIT6;             // Set P2.5 -> TXD, P2.6 -> RXD (Dynament Sensor)
-    P2SEL0 &= ~(BIT5 | BIT6);          // Secondary function
-
-    UCA1CTLW0 = UCSWRST;               // Put eUSCI_A1 in reset mode
-    UCA1CTLW0 |= UCSSEL__SMCLK;        // Use SMCLK
-
-    // Baud Rate = 38400 bps @ 1 MHz
-    UCA0BRW = 1;
-    UCA0MCTLW = UCOS16 | (10 << 4) | (0x00 << 8);  // UCBRFx = 10, UCBRSx = 0x00
-
-    // Release from reset
-    UCA0CTLW0 &= ~UCSWRST;
-
-    // ------Setup IRQ A1 RXIFG------
-    UCA1CTLW0 &= ~UCSWRST; // Correctly release from reset
-
-    UCA1IE |= UCRXIE;       // Enable RX interrupt (Do NOT disable it after!)
-
-    // Debugging output
-    UART_sendString("UCA1IE: ");
-    UART_sendHex(UCA1IE);
-    UART_sendString("\n");
-
-    // Manually trigger the interrupt for testing (optional)
-    UCA1IFG |= UCRXIFG;  // Force RX ISR to execute
-}
-
-//Delay
-void delay_ms(unsigned int ms)
-{
-    while (ms--)
-    {
-        __delay_cycles(1000);          // 1 ms delay at 1 MHz
-    }
-}
-
-void initGLED(void)
-{
-    P1DIR |= BIT0;  // Set P1.0 as output
-    P1OUT &= ~BIT0; // Turn off LED initially
-}
-initREDLED(void)
-{
-    P4DIR |= BIT6;  // Set P1.0 as output
-    P4OUT &= ~BIT6; // Turn off LED initially
-}
-void toggleGLED(void)
-{
-    P1OUT ^= BIT0;  // Toggle the state of P1.0
 
 
-}
-toggleRLED(void)
-{
-    P4OUT ^= BIT6;
-    delay_ms(1000);
-}
 void active_all()
 {
     clockConfigure();
     uart_init();
     initGLED();
     initREDLED();
-    UART_Read();
 
-    //toggleLED();
 
-    UART_sendString("Main Code Running!r\n");
     Timer_Init();
+    Timer1_A_Setup();
+    UART_sendString("Main Code Running!r\n");
 
 }
 
 
 //--------------------------------------------------------------------------
 // Watchdog Function: Pump/update the watchdog timer
-void Watchdog(void)
+void Watchdog_Init(void)
 {
+    // Stop the watchdog timer initially to configure it
+    WDTCTL = WDTPW + WDTHOLD; // Disable Watchdog Timer
 
+    // Configure the watchdog timer: watchdog reset after a timeout
+    WDTCTL = WDTPW + WDTSSEL_2 + WDTTMSEL + WDTIS_4; // ACLK, interval = 1000 ms (1 second)
+
+    // Enable Watchdog interrupt (optional)
+    // WDTCTL |= WDTIE;  // Uncomment if you want an interrupt instead of a reset
 }
-//--------------------------------------------------------------------------
-// For MSP430, if you are using the watchdog, you can reset it here.
 
+// Function to refresh (clear) the watchdog timer to prevent reset
+void Watchdog_Refresh(void)
+{
+    // Clear the Watchdog Timer to prevent a reset
+    WDTCTL = WDTPW + WDTCNTCL; // Clear the Watchdog Timer
+}
+
+// Watchdog interrupt service routine (optional, if interrupt mode is enabled)
+// This function will be triggered when the watchdog timer expires
+#pragma vector=WDT_VECTOR
+__interrupt void WDT_ISR(void)
+{
+    // Handle the Watchdog timeout event here if using interrupt mode
+    // For example, you could reset some peripherals or log an error
+    __no_operation(); // Placeholder for actual ISR logic
+}
 //--------------------------------------------------------------------------
 // RequestGasReading: Determines which protocol to use to poll the sensor
 //--------------------------------------------------------------------------
@@ -226,19 +187,93 @@ void DualReadingReceived(int status, float reading1, float reading2)
 
 
 
-
-
-
-
-// ISRs -------------------------------
+/* *****TEST***** */
+/*
 #pragma vector=USCI_A1_VECTOR
 __interrupt void USCI_A1_ISR(void)
 {
-    toggleGLED();
-    UART_sendString("ISR Triggered\n");
-    UART_sendString("UCA1IFG: ");
-    UART_sendHex(UCA1IFG); // Print the interrupt flag status
-    UART_sendString("\n");
+    if (UCA1IFG & UCRXIFG)
+    {
+        uint8_t receivedByte = UCA1RXBUF;
+
+        // Check for Buffer Overflow Before Storing Data
+        uint16_t nextPut = (tail + 1) % P2P_BUFFER_SIZE;
+        if (nextPut != head)  // Ensure buffer is not full
+        {
+            RX_Buffer[tail] = receivedByte;
+            tail = nextPut;
+        }
+        else
+        {
+            // Buffer Overflow Detected - Handle It (Maybe log an error or clear the buffer)
+            UART_sendString("Buffer Overflow!\n");
+        }
+
+        // Debug Output: Accumulate received bytes into a full packet
+        // Print packet when it's fully received or when a delimiter is found.
+        if (receivedByte == EOF || receivedByte == DLE)  // Assuming EOF or DLE indicates end of packet
+        {
+            // Print the entire packet
+            UART_sendString("Full Packet Received: ");
+
+            // Assuming the buffer is full, print the entire packet
+            uint16_t idx = head;
+            while (idx != tail)  // While there are unread bytes
+            {
+                UART_sendHex(RX_Buffer[idx]);
+                idx = (idx + 1) % P2P_BUFFER_SIZE;
+            }
+
+            UART_sendString(" <Rx End>\n");
+
+            // Optional: Reset buffer indices if necessary
+            head = tail;  // Mark buffer as processed
+        }
+
+        // Clear RX flag to complete the interrupt
+        UCA1IFG &= ~UCRXIFG;
+    }
+}
+*/
+/*
+#pragma vector=USCI_A1_VECTOR
+__interrupt void USCI_A1_ISR(void)
+{
+    if (UCA1IFG & UCRXIFG)
+    {
+        uint8_t receivedByte = UCA1RXBUF;
+
+        // Check for Buffer Overflow Before Storing Data
+        uint16_t nextPut = (tail + 1) % P2P_BUFFER_SIZE;
+        if (nextPut != head)  // Ensure buffer is not full
+        {
+            RX_Buffer[tail] = receivedByte;
+            tail = nextPut;
+        }
+        else
+        {
+            // Buffer Overflow Detected - Handle It (Maybe log an error or clear the buffer)
+            UART_sendString("Buffer Overflow!\n");
+        }
+
+        // Debug Output
+        UART_sendString("Byte Received in ISR: ");
+        UART_sendHex(receivedByte);
+        UART_sendString("\n");
+
+        UCA1IFG &= ~UCRXIFG;  // Clear RX flag
+    }
+
+}
+*/
+
+/*
+// ISRs -------------------------------
+
+#pragma vector=USCI_A1_VECTOR
+__interrupt void USCI_A1_ISR(void)
+{
+
 
     if (UCA1IFG & UCRXIFG)  // Check if RX flag is set
     {
@@ -248,14 +283,15 @@ __interrupt void USCI_A1_ISR(void)
         UART_sendString("\n");
 
         // Store in buffer if needed
-        g_aucRxBuffer[g_uiRxBufferPut] = receivedByte;
-        g_uiRxBufferPut = (g_uiRxBufferPut + 1) % P2P_BUFFER_SIZE;
+        RX_Buffer[tail] = receivedByte;
+        tail = (tail + 1) % P2P_BUFFER_SIZE;
 
         // **Clear RX flag to prevent repeated interrupts**
         UCA1IFG &= ~UCRXIFG;
     }
+    delay_ms(10000);
 }
-
+*/
 // Timer ISR - Handles LED toggle & sensor polling
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void Timer_A0_ISR(void)
@@ -272,6 +308,7 @@ __interrupt void Timer_A0_ISR(void)
             pollCounter = POLL_COUNT;
         }
     }
+
 }
 
 void main(void)
@@ -280,9 +317,10 @@ void main(void)
     WDTCTL = WDTPW | WDTHOLD;         // Stop watchdog timer
     PM5CTL0 &= ~LOCKLPM5;
     active_all();
+
     __bis_SR_register(GIE); // Enable global interrupts
     __enable_interrupt();
-
+    Watchdog_Init();
 
     // Initialize communications
 
@@ -294,11 +332,9 @@ void main(void)
     // Main loop
     for( ; ;)
     {
-        //toggleGLED();
-        //RequestGasReading();
-        //toggleRLED();
+        Watchdog_Refresh();
 
-        UART_sendString("System Running!\r\n");
+        //UART_sendString("System Running!\r\n");
 
         if (COMMS_PROTOCOL == DYNAMENT_PROTOCOL)
         {
@@ -308,7 +344,7 @@ void main(void)
         {
             ModbusCommsHandler();
         }
-        delay_ms(2000);
+        delay_ms(500);
     }
 
 }

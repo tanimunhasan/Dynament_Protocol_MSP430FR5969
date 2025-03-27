@@ -12,10 +12,10 @@
 #include "ModbusComms.h"
 #include "main.h"
 #include <stdio.h>
-
+#include "studiolib.h"
 #include <stdarg.h>
 
-
+volatile uint8_t rxIndex = 0; // Index for buffer
 
 /* Global variables ------------------------------*/
 volatile int frameTimeout = 0;  // used to determine when a frame/packet has been received (no data received within a period of time after data has been received)
@@ -23,51 +23,74 @@ volatile int messageTimeout = 0; // used to determine when a message has been se
 volatile bool frameComplete = false;
 volatile bool messageTimeOut = false;
 
+volatile uint16_t g_uiCommsTimeout  = 0;
+uint8_t RX_Buffer[P2P_BUFFER_SIZE] __attribute__((aligned(16)));
+volatile uint16_t head = 0;  // Define it ONCE here
+volatile uint16_t tail = 0;  // Define it ONCE here
 
-uint8_t g_aucRxBuffer[P2P_BUFFER_SIZE] __attribute__((aligned(16)));
-volatile uint16_t g_uiRxBufferGet = 0;  // Define it ONCE here
-volatile uint16_t g_uiRxBufferPut = 0;  // Define it ONCE here
 
-void UART_sendChar(char c)
+
+
+#pragma vector=TIMER1_A0_VECTOR
+__interrupt void Timer_A1_ISR(void)
 {
-    // Wait for the transmit buffer to be ready
-    while (!(UCA0IFG & UCTXIFG));
-    // Transmit the character
-    UCA0TXBUF = c;
-}
-
-void UART_sendString(const char *str)
-{
-    while (*str)
+    if (g_uiCommsTimeout > 0)
     {
-        UART_sendChar(*str++);
+        g_uiCommsTimeout--;
+    }
+
+    if (frameTimeout > 0)
+    {
+        --frameTimeout;
+        if (frameTimeout <= 0)
+        {
+            frameComplete = true;
+        }
+    }
+
+    if (messageTimeout > 0)
+    {
+        --messageTimeout;
+        if (messageTimeout <= 0)
+        {
+            messageTimeOut = true;
+        }
     }
 }
 
-void UART_sendFloat(float value)
+
+#pragma vector=USCI_A1_VECTOR
+__interrupt void USCI_A1_ISR(void)
 {
-    char buffer[20];
-    snprintf(buffer, sizeof(buffer), "%.2f", value);
-    UART_sendString(buffer);
+    if (UCA1IFG & UCRXIFG)
+    {
+        uint8_t receivedByte = UCA1RXBUF;
+
+        // Debugging Output
+        UART_sendString("ISR Received: ");
+        UART_sendHex(receivedByte);
+        UART_sendString("\n");
+
+        // Calculate next buffer position
+        uint16_t nextPut = (tail + 1) % P2P_BUFFER_SIZE;
+
+        if (nextPut != head)  // Ensure buffer is not full
+        {
+            RX_Buffer[tail] = receivedByte;
+            tail = nextPut;
+        }
+        else
+        {
+            // Buffer Overflow
+            UART_sendString("Buffer Overflow!\n");
+        }
+
+        UCA1IFG &= ~UCRXIFG;  // Clear RX flag
+    }
 }
 
-void UART_sendHex(uint8_t byte)
-{
-    // Declare a buffer for the hex string (2 characters + null terminator)
-    char hexBuffer[3];
 
-    // Convert the high nibble (upper 4 bits) to a hex character
-    hexBuffer[0] = (byte >> 4) > 9 ? (byte >> 4) + 'A' - 10 : (byte >> 4) + '0';
 
-    // Convert the low nibble (lower 4 bits) to a hex character
-    hexBuffer[1] = (byte & 0x0F) > 9 ? (byte & 0x0F) + 'A' - 10 : (byte & 0x0F) + '0';
-
-    // Null terminate the string
-    hexBuffer[2] = '\0';
-
-    // Send the two characters over UART (one at a time)
-    UART_sendString(hexBuffer);
-}
 
 // Function : transmit a given number of bytes of data
 // Inputs : pucData - the array of data to send
@@ -96,11 +119,11 @@ uint8_t p2pRxByte(uint8_t* pucData)
 {
     uint8_t ucStatus = 0;
 
-    if (g_uiRxBufferGet != g_uiRxBufferPut) {
-        *pucData = g_aucRxBuffer[g_uiRxBufferGet++];
+    if (head != tail) {
+        *pucData = RX_Buffer[head++];
 
-        if (P2P_BUFFER_SIZE == g_uiRxBufferGet  ) {
-            g_uiRxBufferGet = 0;
+        if (P2P_BUFFER_SIZE == head  ) {
+            head = 0;
         }
         else
         {
@@ -118,73 +141,48 @@ uint8_t p2pRxByte(uint8_t* pucData)
 }
 */
 
+/* TEST  */
+
 uint8_t p2pRxByte(uint8_t* pucData)
 {
-    if (g_uiRxBufferGet == g_uiRxBufferPut) {
-        UART_sendString("p2pRxByte: No data available!\n");
-        return p2pRxNone;
+    uint8_t ucStatus = 0;
+
+    if (head != tail)  // Check if buffer has data
+    {
+        *pucData = RX_Buffer[head++];
+
+        if (head >= P2P_BUFFER_SIZE) {
+            head = 0;  // Wrap around
+        }
+
+        ucStatus = p2pRxOk;
+        UART_sendString("p2pRxByte Retrieved: ");
+        UART_sendHex(*pucData);
+        UART_sendString("\n");
+    }
+    else
+    {
+        ucStatus = p2pRxNone;
+        UART_sendString("p2pRxByte: No Data\n");
     }
 
-    *pucData = g_aucRxBuffer[g_uiRxBufferGet];
-    g_uiRxBufferGet = (g_uiRxBufferGet + 1) % P2P_BUFFER_SIZE;
-
-    UART_sendString("p2pRxByte: Read byte ");
-    UART_sendHex(*pucData);
-    UART_sendString("\n");
-
-    return p2pRxOk;
+    return ucStatus;
 }
+/* TEST  */
 
 
-void UART_sendPointer(void *ptr)
-{
-    // Cast the pointer to an unsigned long to ensure it's correctly formatted for transmission
-    unsigned long ptrValue = (unsigned long)ptr;
-    int i;
-    // Send the pointer value byte by byte
-    for (i = sizeof(ptrValue) - 1; i >= 0; i--) {
-        UART_sendHex((uint8_t)(ptrValue >> (i * 8)));  // Shift the pointer to get each byte
-    }
-
-    // Optionally, send a newline or other separator to make it easier to read
-    UART_sendString("\n");
-}
-
+/*
 uint8_t UART_Read(void)
 {
-    if (g_uiRxBufferGet == g_uiRxBufferPut)
+    if (head == tail)
     {
         // Buffer is empty
-        return 0; // Or implement a blocking mechanism
+        UART_sendString("UART_Read: Buffer Empty!\n");
+        return 0xFF; // Return a special value indicating "no data"
     }
-    uint8_t data = g_aucRxBuffer[g_uiRxBufferGet];
-    g_uiRxBufferGet = (g_uiRxBufferGet + 1) % P2P_BUFFER_SIZE;
+    uint8_t data = RX_Buffer[head];
+    head = (head + 1) % P2P_BUFFER_SIZE;
     return data;
 }
-
-void printInt(int num) {
-    char buffer[20];  // Assuming the integer won't be larger than 20 digits (which is a huge number)
-    int index = 0;
-
-    if (num == 0) {
-        UART_sendChar('0');
-        return;
-    }
-
-    if (num < 0) {
-        UART_sendChar('-');
-        num = -num;  // Make the number positive for further processing
-    }
-
-    // Convert the integer to a string (in reverse order)
-    while (num > 0) {
-        buffer[index++] = (num % 10) + '0'; // Get the last digit as a character
-        num = num / 10; // Remove the last digit
-    }
-    int i;
-    // Print the number in the correct order
-    for (i = index - 1; i >= 0; i--) {
-        UART_sendChar(buffer[i]);
-    }
-}
+*/
 

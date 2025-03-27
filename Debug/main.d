@@ -25,6 +25,8 @@ main.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-msp430_21.6.1.LTS/include/sys/
 main.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-msp430_21.6.1.LTS/include/stdbool.h
 main.obj: C:/Users/tanim/OneDrive/Desktop/Git\ Project/Dynament_Protocol/src/ModbusComms.h
 main.obj: ../src/comms.h
+main.obj: ../src/uart.h
+main.obj: ../src/studiolib.h
 
 ../main.c:
 
@@ -75,4 +77,8 @@ C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-msp430_21.6.1.LTS/include/stdbool.h:
 C:/Users/tanim/OneDrive/Desktop/Git\ Project/Dynament_Protocol/src/ModbusComms.h:
 
 ../src/comms.h:
+
+../src/uart.h:
+
+../src/studiolib.h:
 

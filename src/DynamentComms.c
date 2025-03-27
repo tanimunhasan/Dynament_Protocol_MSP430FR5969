@@ -6,11 +6,12 @@
 #include "stdbool.h"
 #include "src/comms.h"
 #include "stdint.h"
+#include "uart.h"
+#include "studiolib.h"
 
 //------------------------------------------------------------------------------
 // External low-level UART functions; these must be implemented elsewhere.
 // p2pRxByte returns p2pRxOk when a byte is successfully received.
-
 
 
 // Global variables for packet reception and state
@@ -67,38 +68,29 @@ void InitialiseDynamentComms(void)
     Reset();                // set all the packet reception variables to their default to await an incoming packet
 }
 
+
+
 void DynamentCommsHandler(void)
 {
-    // check for received data
-    // get the data to decode first
-
     uint8_t ch;
-   /* // Debug: Inject a fake received byte
-    g_aucRxBuffer[g_uiRxBufferPut++] = 0x55;
-    if (g_uiRxBufferPut >= P2P_BUFFER_SIZE) g_uiRxBufferPut = 0;
-    UART_sendString("Manually added a byte to RX buffer\n");
-    */
+    uint8_t received = 0;
 
-    int debugCount = 0; // Count received bytes
-    UART_sendString("Checking received data....\n");
     while(p2pRxByte(&ch) == p2pRxOk)
     {
-        debugCount++;
-        UART_sendString("Byte Received: ");
+        received = 1;
+        UART_sendString("CharReceived Called with: ");
         UART_sendHex(ch);
         UART_sendString("\n");
-
         CharReceived(ch);
     }
-
-    if(debugCount == 0)
-    {
-        UART_sendString("No bytes received! \n");
+    if (!received) {
+        UART_sendString("DynamentCommsHandler: No Data Processed\n");
     }
 
     // If a frame timeout occurs (incomplete frame), handle it
     if(frameComplete)
     {
+        UART_sendString("Frame Complete\n");
         frameComplete = false;
         PacketTimedOut();
     }
@@ -106,6 +98,7 @@ void DynamentCommsHandler(void)
     // Check to see if no response has been received to a previously transmitted packet
     if(messageTimeOut)
     {
+        UART_sendString("Message Timeout\n");
         messageTimeOut = false;
     }
 }
@@ -218,6 +211,7 @@ void CharReceived(uint8_t chr)
     }
     else if(chr == EOF && DLEReceived && !EOFReceived)
     {
+        UART_sendString("EOF Received!\n");
         rxBuffer[rxCount++] = chr;
         calcCsum = UpdateChecksum(calcCsum, chr);
         EOFReceived = true;
@@ -228,17 +222,26 @@ void CharReceived(uint8_t chr)
     {
         rxBuffer[rxCount++] = chr;
         csumByteReceived++;
+
+        UART_sendString("Checksum byte received: ");
+        UART_sendHex(chr);
+        UART_sendString("\n");
+
         if(csumByteReceived >= 2)
         {
+            UART_sendString("Received Checksum: ");
+            UART_sendHex(rcvCsum);
+            UART_sendString("\n");
             rcvCsum = (uint16_t)((rxBuffer[rxCount - 2] * 0x100) + rxBuffer[rxCount - 1]);
             packetComplete = true;
             if(rcvCsum != calcCsum)
             {
                 csumError = true;
+                UART_sendString("Checksum Error Detected!\n");
             }
             else
             {
-
+                UART_sendString("Checksum Matched!\n");
             }
         }
     }

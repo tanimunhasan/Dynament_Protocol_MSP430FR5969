@@ -20,6 +20,10 @@
 
 //------------------------------------------------------------------------------
 
+/* Constant declarations --------------------------------*/
+
+#define PACKET_RX_TIMEOUT   3
+
 // CRC lookup tables for high and low order bytes for MODBUS
 const uint8_t auchCRCHi[] = {
     0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81,
@@ -73,8 +77,8 @@ bool readingMeasurand = false; // Indicates a measurand value is being requested
 
 //------------------------------------------------------------------------------
 // Local function prototypes
-static void DecodeMeasurand(uint16_t *registers, uint16_t numReg);
-static void ReadRegistersResponse(uint8_t *data, uint16_t len);
+void DecodeMeasurand(uint16_t *registers, uint16_t numReg);
+void ReadRegistersResponse(uint8_t *data, uint16_t len);
 
 //------------------------------------------------------------------------------
 // Function: CRC16
@@ -156,7 +160,7 @@ void ReadMeasurand(uint16_t address, GetFloat_CallBack_t cb)
 void DecodeMessage(void)
 {
     uint8_t data[257];
-    int len = 0;
+    unsigned int len = 0;
     uint8_t ch;
 
     // Read available bytes until none remain or maximum length reached
@@ -212,11 +216,13 @@ void DecodeMessage(void)
 // Processes a response packet containing register data.
 void ReadRegistersResponse(uint8_t *data, uint16_t len)
 {
-    int x;
+
     // data[2] contains byte count; each register is 2 bytes
     uint16_t regs = (uint16_t)data[2] / 2;
     if (len < ((regs * 2) + 5)) return;  // Verify packet length
 
+    // convert the bytes in the data packet into 16 register data
+    int x;
     uint16_t registers[128];
     for ( x = 0; x < regs; x++)
     {
@@ -241,6 +247,7 @@ void DecodeMeasurand(uint16_t *registers, uint16_t numReg)
             uint32_t intVal = ((uint32_t)registers[1] << 16) | (uint32_t)registers[2];
             float *fPtr = (float *)&intVal;
             float f = *fPtr;
+
             readMeasurandCallBack(READ_RESPONSE_VALUE_VALID, f);
         }
         else  // Invalid reading (e.g., sensor error or warming up)

@@ -1,10 +1,10 @@
 ******************************************************************************
                   MSP430 Linker PC v21.6.1                     
 ******************************************************************************
->> Linked Tue Mar 25 14:34:43 2025
+>> Linked Thu Mar 27 16:05:40 2025
 
 OUTPUT FILE NAME:   <Dynament_Protocol.out>
-ENTRY POINT SYMBOL: "_c_int00_noargs_mpu"  address: 0000448a
+ENTRY POINT SYMBOL: "_c_int00_noargs_mpu"  address: 000044aa
 
 
 MEMORY CONFIGURATION
@@ -18,8 +18,8 @@ MEMORY CONFIGURATION
   INFOC                 00001880   00000080  00000000  00000080  RWIX
   INFOB                 00001900   00000080  00000000  00000080  RWIX
   INFOA                 00001980   00000080  00000000  00000080  RWIX
-  RAM                   00001c00   00000800  000002fe  00000502  RWIX
-  FRAM                  00004400   0000bb80  00000a88  0000b0f8  RWIX
+  RAM                   00001c00   00000800  00000302  000004fe  RWIX
+  FRAM                  00004400   0000bb80  00000bb4  0000afcc  RWIX
   JTAGSIGNATURE         0000ff80   00000004  00000004  00000000  RWIX  ffff 
   BSLSIGNATURE          0000ff84   00000004  00000004  00000000  RWIX  ffff 
   IPESIGNATURE          0000ff88   00000008  00000008  00000000  RWIX  ffff 
@@ -108,12 +108,12 @@ section   page    origin      length       input sections
 .ipe_vars 
 *          0    00004400    00000000     UNINITIALIZED
 
-.cinit     0    00004e5a    0000002e     
-                  00004e5a    0000000c     (__TI_handler_table)
-                  00004e66    0000000b     (.cinit..data.load) [load image, compression = lzss]
-                  00004e71    00000001     --HOLE-- [fill = 0]
-                  00004e72    00000006     (.cinit..bss.load) [load image, compression = zero_init]
-                  00004e78    00000010     (__TI_cinit_table)
+.cinit     0    00004f86    0000002e     
+                  00004f86    0000000c     (__TI_handler_table)
+                  00004f92    0000000b     (.cinit..data.load) [load image, compression = lzss]
+                  00004f9d    00000001     --HOLE-- [fill = 0]
+                  00004f9e    00000006     (.cinit..bss.load) [load image, compression = zero_init]
+                  00004fa4    00000010     (__TI_cinit_table)
 
 .binit     0    00004400    00000000     
 
@@ -121,80 +121,85 @@ section   page    origin      length       input sections
 *          0    00004400    00000000     UNINITIALIZED
 
 .text:_isr 
-*          0    00004400    000000b2     
-                  00004400    00000066     main.obj (.text:_isr:USCI_A1_ISR)
-                  00004466    00000024     main.obj (.text:_isr:Timer_A0_ISR)
-                  0000448a    00000020     rts430x_lc_rd_eabi.lib : boot.c.obj (.text:_isr:_c_int00_noargs_mpu)
-                  000044aa    00000008                            : isr_trap.asm.obj (.text:_isr:__TI_ISR_TRAP)
+*          0    00004400    000000d6     
+                  00004400    00000050     comms.obj (.text:_isr:USCI_A1_ISR)
+                  00004450    00000034     comms.obj (.text:_isr:Timer_A1_ISR)
+                  00004484    00000026     main.obj (.text:_isr:Timer_A0_ISR)
+                  000044aa    00000020     rts430x_lc_rd_eabi.lib : boot.c.obj (.text:_isr:_c_int00_noargs_mpu)
+                  000044ca    00000008                            : isr_trap.asm.obj (.text:_isr:__TI_ISR_TRAP)
+                  000044d2    00000004     main.obj (.text:_isr:WDT_ISR)
 
 .bss       0    00001c00    00000230     UNINITIALIZED
                   00001c00    0000012c     (.common:rxBuffer)
                   00001d2c    00000004     --HOLE--
-                  00001d30    00000100     (.common:g_aucRxBuffer)
+                  00001d30    00000100     (.common:RX_Buffer)
 
-.data      0    00001e30    0000002e     UNINITIALIZED
+.data      0    00001e30    00000032     UNINITIALIZED
                   00001e30    0000001e     DynamentComms.obj (.data)
-                  00001e4e    0000000a     comms.obj (.data)
-                  00001e58    00000003     main.obj (.data)
-                  00001e5b    00000001     --HOLE--
-                  00001e5c    00000002     rts430x_lc_rd_eabi.lib : errno.c.obj (.data)
+                  00001e4e    0000000e     comms.obj (.data)
+                  00001e5c    00000003     main.obj (.data)
+                  00001e5f    00000001     --HOLE--
+                  00001e60    00000002     rts430x_lc_rd_eabi.lib : errno.c.obj (.data)
 
 .stack     0    00002360    000000a0     UNINITIALIZED
                   00002360    00000004     rts430x_lc_rd_eabi.lib : boot.c.obj (.stack)
                   00002364    0000009c     --HOLE--
 
-.text.1    0    000044b2    000005e6     
-                  000044b2    0000003e     rts430x_lc_rd_eabi.lib : asr32.asm.obj (.text:l_asr_const)
-                  000044f0    0000003e                            : lsl32.asm.obj (.text:l_lsl_const)
-                  0000452e    0000003e                            : lsr32.asm.obj (.text:l_lsr_const)
-                  0000456c    0000003a                            : lsr64.c.obj (.text:__mspabi_srlll)
-                  000045a6    00000036                            : snprintf.c.obj (.text:_outs)
-                  000045dc    00000036     main.obj (.text:main)
-                  00004612    00000034     comms.obj (.text:UART_sendPointer)
-                  00004646    00000032     rts430x_lc_rd_eabi.lib : subd.c.obj (.text:__mspabi_subd)
-                  00004678    0000002e     DynamentComms.obj (.text:RequestLiveData2)
-                  000046a6    0000002e     rts430x_lc_rd_eabi.lib : negd.c.obj (.text:__mspabi_negd)
-                  000046d4    0000002e                            : s_copysign.c.obj (.text:copysign)
-                  00004702    0000002c     MSPMPU_INIT_LIB_CCS_msp430_large_code_restricted_data.lib : mpu_init.o (.text:__mpu_init)
-                  0000472e    0000002c     rts430x_lc_rd_eabi.lib : mult3264_f5hw.asm.obj (.text:__mpyull)
-                  0000475a    0000002c                            : div16s.asm.obj (.text)
-                  00004786    00000028     DynamentComms.obj (.text:PacketTimedOut)
-                  000047ae    00000028     rts430x_lc_rd_eabi.lib : fixdi.c.obj (.text:__mspabi_fixdi)
-                  000047d6    00000026                            : memccpy.c.obj (.text:memccpy)
-                  000047fc    00000024     DynamentComms.obj (.text:NAKReceived)
-                  00004820    00000024     rts430x_lc_rd_eabi.lib : copy_zero_init.c.obj (.text:decompress:ZI:__TI_zero_init_nomemset:__TI_zero_init_nomemset)
-                  00004844    00000024                            : mult32_f5hw.asm.obj (.text)
-                  00004868    00000022     main.obj (.text:RequestGasReading)
-                  0000488a    00000022     comms.obj (.text:UART_Read)
-                  000048ac    00000022     main.obj (.text:active_all)
-                  000048ce    00000020     rts430x_lc_rd_eabi.lib : snprintf.c.obj (.text:_outc)
-                  000048ee    0000001c                            : strchr.c.obj (.text:strchr)
-                  0000490a    0000001a     main.obj (.text:clockConfigure)
-                  00004924    0000001a     comms.obj (.text:p2pTxData)
-                  0000493e    00000018     rts430x_lc_rd_eabi.lib : mult16_f5hw.asm.obj (.text)
-                  00004956    00000016     main.obj (.text:delay_ms)
-                  0000496c    00000016     rts430x_lc_rd_eabi.lib : memset.c.obj (.text:memset)
-                  00004982    00000016                            : div16u.asm.obj (.text)
-                  00004998    00000016                            : wcslen.c.obj (.text:wcslen)
-                  000049ae    00000014     main.obj (.text:Timer_Init)
-                  000049c2    00000014     rts430x_lc_rd_eabi.lib : memcpy.c.obj (.text:memcpy)
-                  000049d6    00000012     comms.obj (.text:UART_sendString)
-                  000049e8    00000012     rts430x_lc_rd_eabi.lib : copy_decompress_none.c.obj (.text:decompress:none:__TI_decompress_none)
-                  000049fa    00000012                            : toupper.c.obj (.text:toupper)
-                  00004a0c    00000010                            : lsr32.asm.obj (.text:l_lsr)
-                  00004a1c    0000000e     comms.obj (.text:UART_sendChar)
-                  00004a2a    0000000e     main.obj (.text:initREDLED)
-                  00004a38    0000000e     comms.obj (.text:p2pTxByte)
-                  00004a46    0000000e     rts430x_lc_rd_eabi.lib : strlen.c.obj (.text:strlen)
-                  00004a54    0000000c                            : fltid.c.obj (.text:__mspabi_fltid)
-                  00004a60    0000000a     DynamentComms.obj (.text:PacketSent)
-                  00004a6a    0000000a     rts430x_lc_rd_eabi.lib : abs.c.obj (.text:abs)
-                  00004a74    0000000a     main.obj (.text:initGLED)
-                  00004a7e    00000008     DynamentComms.obj (.text:UpdateChecksum)
-                  00004a86    00000006     rts430x_lc_rd_eabi.lib : exit.c.obj (.text:abort)
-                  00004a8c    00000006     main.obj (.text:toggleGLED)
-                  00004a92    00000004     rts430x_lc_rd_eabi.lib : pre_init.c.obj (.text:_system_pre_init)
-                  00004a96    00000002                            : startup.c.obj (.text:_system_post_cinit)
+.text.1    0    000044d6    0000066c     
+                  000044d6    00000040     rts430x_lc_rd_eabi.lib : div32s.asm.obj (.text)
+                  00004516    0000003e     studiolib.obj (.text:UART_sendFloat)
+                  00004554    0000003e     rts430x_lc_rd_eabi.lib : asr32.asm.obj (.text:l_asr_const)
+                  00004592    0000003e                            : lsl32.asm.obj (.text:l_lsl_const)
+                  000045d0    0000003e                            : lsr32.asm.obj (.text:l_lsr_const)
+                  0000460e    0000003a                            : lsl64.c.obj (.text:__mspabi_sllll)
+                  00004648    0000003a                            : lsr64.c.obj (.text:__mspabi_srlll)
+                  00004682    00000036                            : snprintf.c.obj (.text:_outs)
+                  000046b8    00000036     main.obj (.text:main)
+                  000046ee    00000032     rts430x_lc_rd_eabi.lib : subd.c.obj (.text:__mspabi_subd)
+                  00004720    0000002e     DynamentComms.obj (.text:RequestLiveData2)
+                  0000474e    0000002e     rts430x_lc_rd_eabi.lib : negd.c.obj (.text:__mspabi_negd)
+                  0000477c    0000002e                            : s_copysign.c.obj (.text:copysign)
+                  000047aa    0000002c     MSPMPU_INIT_LIB_CCS_msp430_large_code_restricted_data.lib : mpu_init.o (.text:__mpu_init)
+                  000047d6    0000002c     rts430x_lc_rd_eabi.lib : mult3264_f5hw.asm.obj (.text:__mpyull)
+                  00004802    0000002c                            : div16s.asm.obj (.text)
+                  0000482e    00000028     DynamentComms.obj (.text:PacketTimedOut)
+                  00004856    00000028     rts430x_lc_rd_eabi.lib : fixdi.c.obj (.text:__mspabi_fixdi)
+                  0000487e    00000026                            : memccpy.c.obj (.text:memccpy)
+                  000048a4    00000024     DynamentComms.obj (.text:NAKReceived)
+                  000048c8    00000024     rts430x_lc_rd_eabi.lib : copy_zero_init.c.obj (.text:decompress:ZI:__TI_zero_init_nomemset:__TI_zero_init_nomemset)
+                  000048ec    00000024                            : mult32_f5hw.asm.obj (.text)
+                  00004910    00000022     main.obj (.text:RequestGasReading)
+                  00004932    00000022     main.obj (.text:active_all)
+                  00004954    00000020     rts430x_lc_rd_eabi.lib : snprintf.c.obj (.text:_outc)
+                  00004974    0000001c                            : strchr.c.obj (.text:strchr)
+                  00004990    0000001a     main.obj (.text:clockConfigure)
+                  000049aa    0000001a     comms.obj (.text:p2pTxData)
+                  000049c4    00000018     rts430x_lc_rd_eabi.lib : mult16_f5hw.asm.obj (.text)
+                  000049dc    00000016     uart.obj (.text:delay_ms)
+                  000049f2    00000016     rts430x_lc_rd_eabi.lib : memset.c.obj (.text:memset)
+                  00004a08    00000016                            : div16u.asm.obj (.text)
+                  00004a1e    00000016                            : wcslen.c.obj (.text:wcslen)
+                  00004a34    00000014     main.obj (.text:Timer1_A_Setup)
+                  00004a48    00000014     main.obj (.text:Timer_Init)
+                  00004a5c    00000014     rts430x_lc_rd_eabi.lib : memcpy.c.obj (.text:memcpy)
+                  00004a70    00000012     studiolib.obj (.text:UART_sendString)
+                  00004a82    00000012     rts430x_lc_rd_eabi.lib : copy_decompress_none.c.obj (.text:decompress:none:__TI_decompress_none)
+                  00004a94    00000012                            : toupper.c.obj (.text:toupper)
+                  00004aa6    00000010                            : lsr32.asm.obj (.text:l_lsr)
+                  00004ab6    0000000e     studiolib.obj (.text:UART_sendChar)
+                  00004ac4    0000000e     main.obj (.text:Watchdog_Init)
+                  00004ad2    0000000e     uart.obj (.text:initREDLED)
+                  00004ae0    0000000e     comms.obj (.text:p2pTxByte)
+                  00004aee    0000000e     rts430x_lc_rd_eabi.lib : strlen.c.obj (.text:strlen)
+                  00004afc    0000000c                            : fltid.c.obj (.text:__mspabi_fltid)
+                  00004b08    0000000a     DynamentComms.obj (.text:PacketSent)
+                  00004b12    0000000a     rts430x_lc_rd_eabi.lib : abs.c.obj (.text:abs)
+                  00004b1c    0000000a     uart.obj (.text:initGLED)
+                  00004b26    00000008     DynamentComms.obj (.text:UpdateChecksum)
+                  00004b2e    00000008     main.obj (.text:Watchdog_Refresh)
+                  00004b36    00000006     rts430x_lc_rd_eabi.lib : exit.c.obj (.text:abort)
+                  00004b3c    00000004                            : pre_init.c.obj (.text:_system_pre_init)
+                  00004b40    00000002                            : startup.c.obj (.text:_system_post_cinit)
 
 $fill000   0    0000ff80    00000004     
                   0000ff80    00000004     --HOLE-- [fill = ffff]
@@ -245,13 +250,13 @@ TIMER1_A1
 
 TIMER1_A0 
 *          0    0000ffe2    00000002     
-                  0000ffe2    00000002     rts430x_lc_rd_eabi.lib : int41.asm.obj (.int41)
+                  0000ffe2    00000002     comms.obj (.int41)
 
 DMA        0    0000ffe4    00000002     
                   0000ffe4    00000002     rts430x_lc_rd_eabi.lib : int42.asm.obj (.int42)
 
 USCI_A1    0    0000ffe6    00000002     
-                  0000ffe6    00000002     main.obj (.int43)
+                  0000ffe6    00000002     comms.obj (.int43)
 
 TIMER0_A1 
 *          0    0000ffe8    00000002     
@@ -271,7 +276,7 @@ USCI_A0    0    0000fff0    00000002
                   0000fff0    00000002     rts430x_lc_rd_eabi.lib : int48.asm.obj (.int48)
 
 WDT        0    0000fff2    00000002     
-                  0000fff2    00000002     rts430x_lc_rd_eabi.lib : int49.asm.obj (.int49)
+                  0000fff2    00000002     main.obj (.int49)
 
 TIMER0_B1 
 *          0    0000fff4    00000002     
@@ -293,13 +298,15 @@ SYSNMI     0    0000fffc    00000002
 .reset     0    0000fffe    00000002     
                   0000fffe    00000002     rts430x_lc_rd_eabi.lib : boot.c.obj (.reset)
 
-.const     0    00004a98    000003c2     
-                  00004a98    0000016e     main.obj (.const:.string)
-                  00004c06    00000101     rts430x_lc_rd_eabi.lib : ctype.c.obj (.const:.string:_ctypes_)
-                  00004d07    00000001     --HOLE-- [fill = 0]
-                  00004d08    000000ee     DynamentComms.obj (.const:.string)
-                  00004df6    0000003e     comms.obj (.const:.string)
-                  00004e34    00000026     rts430x_lc_rd_eabi.lib : _printfi.c.obj (.const:.string)
+.const     0    00004b42    00000444     
+                  00004b42    00000180     DynamentComms.obj (.const:.string)
+                  00004cc2    00000120     main.obj (.const:.string)
+                  00004de2    00000101     rts430x_lc_rd_eabi.lib : ctype.c.obj (.const:.string:_ctypes_)
+                  00004ee3    00000001     --HOLE-- [fill = 0]
+                  00004ee4    0000004e     comms.obj (.const:.string)
+                  00004f32    00000026     rts430x_lc_rd_eabi.lib : _printfi.c.obj (.const:.string)
+                  00004f58    00000026     uart.obj (.const:.string)
+                  00004f7e    00000008     studiolib.obj (.const:.string)
 
 .text.2    0    00010000    00003ff8     
                   00010000    0000072a     rts430x_lc_rd_eabi.lib : addd.c.obj (.text:__mspabi_addd)
@@ -309,69 +316,69 @@ SYSNMI     0    0000fffc    00000002
                   00011186    00000292                            : mpyd.c.obj (.text:__mspabi_mpyd)
                   00011418    0000027a                            : _printfi.c.obj (.text:__TI_printfi:_setfield___TI_printfi)
                   00011692    00000268                            : _printfi.c.obj (.text:_pproc_fgea)
-                  000118fa    00000224                            : _printfi.c.obj (.text:acvt)
-                  00011b1e    0000021c                            : divd.c.obj (.text:__mspabi_divd)
-                  00011d3a    00000206                            : _printfi.c.obj (.text:__TI_printfi:_getarg_diouxp___TI_printfi)
-                  00011f40    000001e6                            : _printfi.c.obj (.text:ecvt)
-                  00012126    000001d8     DynamentComms.obj (.text:CharReceived)
-                  000122fe    000001d2     DynamentComms.obj (.text:SendDynamentPacket)
-                  000124d0    000001c8     rts430x_lc_rd_eabi.lib : _printfi.c.obj (.text:fcvt)
-                  00012698    000001a2                            : _printfi.c.obj (.text:_pconv_e)
-                  0001283a    00000170                            : _printfi.c.obj (.text:_pconv_a)
-                  000129aa    00000164                            : frcmpyd.c.obj (.text:__TI_frcmpyd)
-                  00012b0e    0000015a                            : s_scalbn.c.obj (.text:scalbn)
-                  00012c68    00000148                            : _printfi.c.obj (.text:__TI_printfi:_pproc_diouxp___TI_printfi)
-                  00012db0    00000128                            : _printfi.c.obj (.text:__TI_printfi:_ltostr___TI_printfi)
-                  00012ed8    0000011c     DynamentComms.obj (.text:ReadLiveData2Response)
-                  00012ff4    000000fc     rts430x_lc_rd_eabi.lib : _printfi.c.obj (.text:_pconv_g)
-                  000130f0    000000ea                            : _printfi.c.obj (.text:__TI_printfi:_pproc_fwp___TI_printfi)
-                  000131da    000000d8                            : cmpd.c.obj (.text:__mspabi_cmpd)
-                  000132b2    000000c8                            : _printfi.c.obj (.text:__TI_printfi:_pproc_wstr___TI_printfi)
-                  0001337a    000000a6     DynamentComms.obj (.text:ReadLiveDataResponse)
-                  00013420    000000a6     rts430x_lc_rd_eabi.lib : _printfi.c.obj (.text:__TI_printfi:_pproc_str___TI_printfi)
-                  000134c6    000000a6                            : s_frexp.c.obj (.text:frexp)
-                  0001356c    0000009e                            : fltlid.c.obj (.text:__mspabi_fltlid)
-                  0001360a    00000094     main.obj (.text:DualReadingReceived)
-                  0001369e    00000090     rts430x_lc_rd_eabi.lib : _printfi.c.obj (.text:_ecpy)
-                  0001372e    00000090                            : _printfi.c.obj (.text:_mcpy)
-                  000137be    00000084     DynamentComms.obj (.text:ProcessReceivedPacket)
-                  00013842    00000080     rts430x_lc_rd_eabi.lib : _ltoa.c.obj (.text:__TI_ltoa)
-                  000138c2    00000080     comms.obj (.text:printInt)
-                  00013942    00000078     rts430x_lc_rd_eabi.lib : _printfi.c.obj (.text:_pconv_f)
-                  000139ba    00000076                            : copy_decompress_lzss.c.obj (.text:decompress:lzss:__TI_decompress_lzss)
-                  00013a30    00000066                            : fixdli.c.obj (.text:__mspabi_fixdli)
-                  00013a96    00000064                            : cvtfd.c.obj (.text:__mspabi_cvtfd)
-                  00013afa    00000062     DynamentComms.obj (.text:DynamentCommsHandler)
-                  00013b5c    00000062     rts430x_lc_rd_eabi.lib : atoi.c.obj (.text:atoi)
-                  00013bbe    00000062                            : snprintf.c.obj (.text:snprintf)
-                  00013c20    00000062     main.obj (.text:uart_init)
-                  00013c82    0000005c     rts430x_lc_rd_eabi.lib : mult64_f5hw.asm.obj (.text:__mpyll)
-                  00013cde    00000058                            : div32u.asm.obj (.text)
-                  00013d36    00000056     comms.obj (.text:UART_sendHex)
-                  00013d8c    00000054     rts430x_lc_rd_eabi.lib : autoinit.c.obj (.text:__TI_auto_init_nobinit_nopinit_hold_wdt:__TI_auto_init_nobinit_nopinit_hold_wdt)
-                  00013de0    0000004e                            : _printfi.c.obj (.text:_fcpy)
-                  00013e2e    0000004a                            : fs_cmp.asm.obj (.text)
-                  00013e78    00000046     comms.obj (.text:p2pRxByte)
-                  00013ebe    00000042     DynamentComms.obj (.text:Reset)
-                  00013f00    00000040     rts430x_lc_rd_eabi.lib : asr64.c.obj (.text:__mspabi_srall)
-                  00013f40    00000040                            : div32s.asm.obj (.text)
-                  00013f80    0000003e     comms.obj (.text:UART_sendFloat)
-                  00013fbe    0000003a     rts430x_lc_rd_eabi.lib : lsl64.c.obj (.text:__mspabi_sllll)
+                  000118fa    00000226     DynamentComms.obj (.text:CharReceived)
+                  00011b20    00000224     rts430x_lc_rd_eabi.lib : _printfi.c.obj (.text:acvt)
+                  00011d44    0000021c                            : divd.c.obj (.text:__mspabi_divd)
+                  00011f60    00000206                            : _printfi.c.obj (.text:__TI_printfi:_getarg_diouxp___TI_printfi)
+                  00012166    000001e6                            : _printfi.c.obj (.text:ecvt)
+                  0001234c    000001d2     DynamentComms.obj (.text:SendDynamentPacket)
+                  0001251e    000001c8     rts430x_lc_rd_eabi.lib : _printfi.c.obj (.text:fcvt)
+                  000126e6    000001a2                            : _printfi.c.obj (.text:_pconv_e)
+                  00012888    00000170                            : _printfi.c.obj (.text:_pconv_a)
+                  000129f8    00000164                            : frcmpyd.c.obj (.text:__TI_frcmpyd)
+                  00012b5c    0000015a                            : s_scalbn.c.obj (.text:scalbn)
+                  00012cb6    00000148                            : _printfi.c.obj (.text:__TI_printfi:_pproc_diouxp___TI_printfi)
+                  00012dfe    00000128                            : _printfi.c.obj (.text:__TI_printfi:_ltostr___TI_printfi)
+                  00012f26    0000011c     DynamentComms.obj (.text:ReadLiveData2Response)
+                  00013042    000000fc     rts430x_lc_rd_eabi.lib : _printfi.c.obj (.text:_pconv_g)
+                  0001313e    000000ea                            : _printfi.c.obj (.text:__TI_printfi:_pproc_fwp___TI_printfi)
+                  00013228    000000d8                            : cmpd.c.obj (.text:__mspabi_cmpd)
+                  00013300    000000c8                            : _printfi.c.obj (.text:__TI_printfi:_pproc_wstr___TI_printfi)
+                  000133c8    000000a6     DynamentComms.obj (.text:ReadLiveDataResponse)
+                  0001346e    000000a6     rts430x_lc_rd_eabi.lib : _printfi.c.obj (.text:__TI_printfi:_pproc_str___TI_printfi)
+                  00013514    000000a6                            : s_frexp.c.obj (.text:frexp)
+                  000135ba    0000009e                            : fltlid.c.obj (.text:__mspabi_fltlid)
+                  00013658    00000094     main.obj (.text:DualReadingReceived)
+                  000136ec    00000090     rts430x_lc_rd_eabi.lib : _printfi.c.obj (.text:_ecpy)
+                  0001377c    00000090                            : _printfi.c.obj (.text:_mcpy)
+                  0001380c    00000084     DynamentComms.obj (.text:ProcessReceivedPacket)
+                  00013890    00000082     uart.obj (.text:uart_init)
+                  00013912    00000080     rts430x_lc_rd_eabi.lib : _ltoa.c.obj (.text:__TI_ltoa)
+                  00013992    00000080     studiolib.obj (.text:printInt)
+                  00013a12    00000078     rts430x_lc_rd_eabi.lib : _printfi.c.obj (.text:_pconv_f)
+                  00013a8a    00000076                            : copy_decompress_lzss.c.obj (.text:decompress:lzss:__TI_decompress_lzss)
+                  00013b00    0000006a     DynamentComms.obj (.text:DynamentCommsHandler)
+                  00013b6a    00000066     rts430x_lc_rd_eabi.lib : fixdli.c.obj (.text:__mspabi_fixdli)
+                  00013bd0    00000064                            : cvtfd.c.obj (.text:__mspabi_cvtfd)
+                  00013c34    00000062                            : atoi.c.obj (.text:atoi)
+                  00013c96    00000062                            : snprintf.c.obj (.text:snprintf)
+                  00013cf8    0000005c                            : mult64_f5hw.asm.obj (.text:__mpyll)
+                  00013d54    00000058                            : div32u.asm.obj (.text)
+                  00013dac    00000056     studiolib.obj (.text:UART_sendHex)
+                  00013e02    00000054     rts430x_lc_rd_eabi.lib : autoinit.c.obj (.text:__TI_auto_init_nobinit_nopinit_hold_wdt:__TI_auto_init_nobinit_nopinit_hold_wdt)
+                  00013e56    00000054     comms.obj (.text:p2pRxByte)
+                  00013eaa    0000004e     rts430x_lc_rd_eabi.lib : _printfi.c.obj (.text:_fcpy)
+                  00013ef8    0000004a                            : fs_cmp.asm.obj (.text)
+                  00013f42    00000042     DynamentComms.obj (.text:Reset)
+                  00013f84    00000040     rts430x_lc_rd_eabi.lib : asr64.c.obj (.text:__mspabi_srall)
+                  00013fc4    00000034     studiolib.obj (.text:UART_sendPointer)
 
 MODULE SUMMARY
 
        Module                       code    ro data   rw data
        ------                       ----    -------   -------
     .\
-       main.obj                     604     370       3      
+       main.obj                     400     292       3      
     +--+----------------------------+-------+---------+---------+
-       Total:                       604     370       3      
+       Total:                       400     292       3      
                                                              
     .\src\
-       DynamentComms.obj            1824    238       330    
-       comms.obj                    504     62        266    
+       DynamentComms.obj            1910    384       330    
+       comms.obj                    256     82        270    
+       studiolib.obj                360     8         0      
+       uart.obj                     176     38        0      
     +--+----------------------------+-------+---------+---------+
-       Total:                       2328    300       596    
+       Total:                       2702    512       600    
                                                              
     C:\ti\ccs1271\ccs\ccs_base\msp430\lib\FR59xx\MSPMPU_INIT_LIB_CCS_msp430_large_code_restricted_data.lib
        mpu_init.o                   44      0         0      
@@ -444,13 +451,11 @@ MODULE SUMMARY
        int38.asm.obj                0       2         0      
        int39.asm.obj                0       2         0      
        int40.asm.obj                0       2         0      
-       int41.asm.obj                0       2         0      
        int42.asm.obj                0       2         0      
        int44.asm.obj                0       2         0      
        int46.asm.obj                0       2         0      
        int47.asm.obj                0       2         0      
        int48.asm.obj                0       2         0      
-       int49.asm.obj                0       2         0      
        int50.asm.obj                0       2         0      
        int51.asm.obj                0       2         0      
        int52.asm.obj                0       2         0      
@@ -458,24 +463,24 @@ MODULE SUMMARY
        int54.asm.obj                0       2         0      
        startup.c.obj                2       0         0      
     +--+----------------------------+-------+---------+---------+
-       Total:                       15088   343       2      
+       Total:                       15088   339       2      
                                                              
        Stack:                       0       0         160    
        Linker Generated:            0       45        0      
     +--+----------------------------+-------+---------+---------+
-       Grand Total:                 18064   1058      761    
+       Grand Total:                 18234   1188      765    
 
 
 LINKER GENERATED COPY TABLES
 
-__TI_cinit_table @ 00004e78 records: 2, size/record: 8, table size: 16
-	.data: load addr=00004e66, load size=0000000b bytes, run addr=00001e30, run size=0000002e bytes, compression=lzss
-	.bss: load addr=00004e72, load size=00000006 bytes, run addr=00001c00, run size=00000230 bytes, compression=zero_init
+__TI_cinit_table @ 00004fa4 records: 2, size/record: 8, table size: 16
+	.data: load addr=00004f92, load size=0000000b bytes, run addr=00001e30, run size=00000032 bytes, compression=lzss
+	.bss: load addr=00004f9e, load size=00000006 bytes, run addr=00001c00, run size=00000230 bytes, compression=zero_init
 
 
 LINKER GENERATED HANDLER TABLE
 
-__TI_handler_table @ 00004e5a records: 3, size/record: 4, table size: 12
+__TI_handler_table @ 00004f86 records: 3, size/record: 4, table size: 12
 	index: 0, handler: __TI_zero_init
 	index: 1, handler: __TI_decompress_lzss
 	index: 2, handler: __TI_decompress_none
@@ -742,7 +747,7 @@ address   name
 000009ce  AESAXIN_L                              
 000004be  BCD2BIN                                
 000004bc  BIN2BCD                                
-00004a86  C$$EXIT                                
+00004b36  C$$EXIT                                
 0000043e  CAPTIO0CTL                             
 0000043f  CAPTIO0CTL_H                           
 0000043e  CAPTIO0CTL_L                           
@@ -800,7 +805,7 @@ address   name
 0000016c  CSCTL6                                 
 0000016d  CSCTL6_H                               
 0000016c  CSCTL6_L                               
-00012126  CharReceived                           
+000118fa  CharReceived                           
 00001e34  DLEReceived                            
 00000510  DMA0CTL                                
 00000516  DMA0DA                                 
@@ -832,8 +837,8 @@ address   name
 00000506  DMACTL3                                
 00000508  DMACTL4                                
 0000050e  DMAIV                                  
-0001360a  DualReadingReceived                    
-00013afa  DynamentCommsHandler                   
+00013658  DualReadingReceived                    
+00013b00  DynamentCommsHandler                   
 00001e37  EOFReceived                            
 00000140  FRCTL0                                 
 00000141  FRCTL0_H                               
@@ -844,7 +849,7 @@ address   name
 00000146  GCCTL1                                 
 00000147  GCCTL1_H                               
 00000146  GCCTL1_L                               
-00013ebe  InitialiseDynamentComms                
+00013f42  InitialiseDynamentComms                
 000004c4  MAC                                    
 000004da  MAC32H                                 
 000004db  MAC32H_H                               
@@ -908,7 +913,7 @@ address   name
 000004c2  MPYS_L                                 
 000004c1  MPY_H                                  
 000004c0  MPY_L                                  
-000047fc  NAKReceived                            
+000048a4  NAKReceived                            
 000004c8  OP2                                    
 000004e2  OP2H                                   
 000004e3  OP2H_H                                 
@@ -1012,10 +1017,10 @@ address   name
 0000012a  PMMIFG                                 
 0000012b  PMMIFG_H                               
 0000012a  PMMIFG_L                               
-00004786  PacketChecksumError                    
-00004a60  PacketSent                             
-00004786  PacketTimedOut                         
-000137be  ProcessReceivedPacket                  
+0000482e  PacketChecksumError                    
+00004b08  PacketSent                             
+0000482e  PacketTimedOut                         
+0001380c  ProcessReceivedPacket                  
 000001b0  REFCTL0                                
 000001b1  REFCTL0_H                              
 000001b0  REFCTL0_L                              
@@ -1071,11 +1076,12 @@ address   name
 000004b6  RTCYEAR                                
 000004b7  RTCYEAR_H                              
 000004b6  RTCYEAR_L                              
-00012ed8  ReadLiveData2Response                  
-0001337a  ReadLiveDataResponse                   
-00004868  RequestGasReading                      
-00004678  RequestLiveData2                       
-00013ebe  Reset                                  
+00001d30  RX_Buffer                              
+00012f26  ReadLiveData2Response                  
+000133c8  ReadLiveDataResponse                   
+00004910  RequestGasReading                      
+00004720  RequestLiveData2                       
+00013f42  Reset                                  
 00000100  SFRIE1                                 
 00000101  SFRIE1_H                               
 00000100  SFRIE1_L                               
@@ -1115,7 +1121,7 @@ address   name
 0000019a  SYSUNIV                                
 0000019b  SYSUNIV_H                              
 0000019a  SYSUNIV_L                              
-000122fe  SendDynamentPacket                     
+0001234c  SendDynamentPacket                     
 00000352  TA0CCR0                                
 00000354  TA0CCR1                                
 00000356  TA0CCR2                                
@@ -1170,14 +1176,15 @@ address   name
 000003e0  TB0EX0                                 
 000003ee  TB0IV                                  
 000003d0  TB0R                                   
-00004466  Timer_A0_ISR                           
-000049ae  Timer_Init                             
-0000488a  UART_Read                              
-00004a1c  UART_sendChar                          
-00013f80  UART_sendFloat                         
-00013d36  UART_sendHex                           
-00004612  UART_sendPointer                       
-000049d6  UART_sendString                        
+00004a34  Timer1_A_Setup                         
+00004484  Timer_A0_ISR                           
+00004450  Timer_A1_ISR                           
+00004a48  Timer_Init                             
+00004ab6  UART_sendChar                          
+00004516  UART_sendFloat                         
+00013dac  UART_sendHex                           
+00013fc4  UART_sendPointer                       
+00004a70  UART_sendString                        
 000005d0  UCA0ABCTL                              
 000005c6  UCA0BRW                                
 000005c7  UCA0BRW_H                              
@@ -1288,23 +1295,26 @@ address   name
 0000064f  UCB0TXBUF_H                            
 0000064e  UCB0TXBUF_L                            
 00004400  USCI_A1_ISR                            
-00004a7e  UpdateChecksum                         
+00004b26  UpdateChecksum                         
 0000015c  WDTCTL                                 
 0000015d  WDTCTL_H                               
 0000015c  WDTCTL_L                               
+000044d2  WDT_ISR                                
+00004ac4  Watchdog_Init                          
+00004b2e  Watchdog_Refresh                       
 00002400  __STACK_END                            
 000000a0  __STACK_SIZE                           
-00004e78  __TI_CINIT_Base                        
-00004e88  __TI_CINIT_Limit                       
-00004e88  __TI_CINIT_Warm                        
-00004e5a  __TI_Handler_Table_Base                
-00004e66  __TI_Handler_Table_Limit               
-000044aa  __TI_ISR_TRAP                          
-00013d8c  __TI_auto_init_nobinit_nopinit_hold_wdt
-000139ba  __TI_decompress_lzss                   
-000049e8  __TI_decompress_none                   
+00004fa4  __TI_CINIT_Base                        
+00004fb4  __TI_CINIT_Limit                       
+00004fb4  __TI_CINIT_Warm                        
+00004f86  __TI_Handler_Table_Base                
+00004f92  __TI_Handler_Table_Limit               
+000044ca  __TI_ISR_TRAP                          
+00013e02  __TI_auto_init_nobinit_nopinit_hold_wdt
+00013a8a  __TI_decompress_lzss                   
+00004a82  __TI_decompress_none                   
 0001072a  __TI_frcdivd                           
-000129aa  __TI_frcmpyd                           
+000129f8  __TI_frcmpyd                           
 0000ffcc  __TI_int30                             
 0000ffce  __TI_int31                             
 0000ffd0  __TI_int32                             
@@ -1330,160 +1340,160 @@ address   name
 0000fff8  __TI_int52                             
 0000fffa  __TI_int53                             
 0000fffc  __TI_int54                             
-00013842  __TI_ltoa                              
+00013912  __TI_ltoa                              
 ffffffff  __TI_pprof_out_hndl                    
 00010ee0  __TI_printfi                           
 ffffffff  __TI_prof_data_size                    
 ffffffff  __TI_prof_data_start                   
-00004820  __TI_zero_init_nomemset                
+000048c8  __TI_zero_init_nomemset                
 ffffffff  __c_args__                             
 00000001  __mpu_enable                           
-00004702  __mpu_init                             
+000047aa  __mpu_init                             
 00010000  __mspabi_addd                          
-000131da  __mspabi_cmpd                          
-00013e2e  __mspabi_cmpf                          
-00013a96  __mspabi_cvtfd                         
-00011b1e  __mspabi_divd                          
-0000475a  __mspabi_divi                          
-00013f40  __mspabi_divli                         
-00004982  __mspabi_divu                          
-00013cde  __mspabi_divul                         
+00013228  __mspabi_cmpd                          
+00013ef8  __mspabi_cmpf                          
+00013bd0  __mspabi_cvtfd                         
+00011d44  __mspabi_divd                          
+00004802  __mspabi_divi                          
+000044d6  __mspabi_divli                         
+00004a08  __mspabi_divu                          
+00013d54  __mspabi_divul                         
 00010b92  __mspabi_divull                        
-000047ae  __mspabi_fixdi                         
-00013a30  __mspabi_fixdli                        
-00004a54  __mspabi_fltid                         
-0001356c  __mspabi_fltlid                        
+00004856  __mspabi_fixdi                         
+00013b6a  __mspabi_fixdli                        
+00004afc  __mspabi_fltid                         
+000135ba  __mspabi_fltlid                        
 00011186  __mspabi_mpyd                          
-0000493e  __mspabi_mpyi_f5hw                     
-00004844  __mspabi_mpyl_f5hw                     
-00013c82  __mspabi_mpyll_f5hw                    
-0000472e  __mspabi_mpyull_f5hw                   
-000046a6  __mspabi_negd                          
-0000475a  __mspabi_remi                          
-00013f40  __mspabi_remli                         
-00004982  __mspabi_remu                          
-00013cde  __mspabi_remul                         
-00004528  __mspabi_slll_1                        
-00004504  __mspabi_slll_10                       
-00004500  __mspabi_slll_11                       
-000044fc  __mspabi_slll_12                       
-000044f8  __mspabi_slll_13                       
-000044f4  __mspabi_slll_14                       
-000044f0  __mspabi_slll_15                       
-00004524  __mspabi_slll_2                        
-00004520  __mspabi_slll_3                        
-0000451c  __mspabi_slll_4                        
-00004518  __mspabi_slll_5                        
-00004514  __mspabi_slll_6                        
-00004510  __mspabi_slll_7                        
-0000450c  __mspabi_slll_8                        
-00004508  __mspabi_slll_9                        
-00013fbe  __mspabi_sllll                         
-000044ea  __mspabi_sral_1                        
-000044c6  __mspabi_sral_10                       
-000044c2  __mspabi_sral_11                       
-000044be  __mspabi_sral_12                       
-000044ba  __mspabi_sral_13                       
-000044b6  __mspabi_sral_14                       
-000044b2  __mspabi_sral_15                       
-000044e6  __mspabi_sral_2                        
-000044e2  __mspabi_sral_3                        
-000044de  __mspabi_sral_4                        
-000044da  __mspabi_sral_5                        
-000044d6  __mspabi_sral_6                        
-000044d2  __mspabi_sral_7                        
-000044ce  __mspabi_sral_8                        
-000044ca  __mspabi_sral_9                        
-00013f00  __mspabi_srall                         
-00004a0c  __mspabi_srll                          
-00004566  __mspabi_srll_1                        
-00004542  __mspabi_srll_10                       
-0000453e  __mspabi_srll_11                       
-0000453a  __mspabi_srll_12                       
-00004536  __mspabi_srll_13                       
-00004532  __mspabi_srll_14                       
-0000452e  __mspabi_srll_15                       
-00004562  __mspabi_srll_2                        
-0000455e  __mspabi_srll_3                        
-0000455a  __mspabi_srll_4                        
-00004556  __mspabi_srll_5                        
-00004552  __mspabi_srll_6                        
-0000454e  __mspabi_srll_7                        
-0000454a  __mspabi_srll_8                        
-00004546  __mspabi_srll_9                        
-0000456c  __mspabi_srlll                         
-00004646  __mspabi_subd                          
-0000448a  _c_int00_noargs_mpu                    
-00004c06  _ctypes_                               
+000049c4  __mspabi_mpyi_f5hw                     
+000048ec  __mspabi_mpyl_f5hw                     
+00013cf8  __mspabi_mpyll_f5hw                    
+000047d6  __mspabi_mpyull_f5hw                   
+0000474e  __mspabi_negd                          
+00004802  __mspabi_remi                          
+000044d6  __mspabi_remli                         
+00004a08  __mspabi_remu                          
+00013d54  __mspabi_remul                         
+000045ca  __mspabi_slll_1                        
+000045a6  __mspabi_slll_10                       
+000045a2  __mspabi_slll_11                       
+0000459e  __mspabi_slll_12                       
+0000459a  __mspabi_slll_13                       
+00004596  __mspabi_slll_14                       
+00004592  __mspabi_slll_15                       
+000045c6  __mspabi_slll_2                        
+000045c2  __mspabi_slll_3                        
+000045be  __mspabi_slll_4                        
+000045ba  __mspabi_slll_5                        
+000045b6  __mspabi_slll_6                        
+000045b2  __mspabi_slll_7                        
+000045ae  __mspabi_slll_8                        
+000045aa  __mspabi_slll_9                        
+0000460e  __mspabi_sllll                         
+0000458c  __mspabi_sral_1                        
+00004568  __mspabi_sral_10                       
+00004564  __mspabi_sral_11                       
+00004560  __mspabi_sral_12                       
+0000455c  __mspabi_sral_13                       
+00004558  __mspabi_sral_14                       
+00004554  __mspabi_sral_15                       
+00004588  __mspabi_sral_2                        
+00004584  __mspabi_sral_3                        
+00004580  __mspabi_sral_4                        
+0000457c  __mspabi_sral_5                        
+00004578  __mspabi_sral_6                        
+00004574  __mspabi_sral_7                        
+00004570  __mspabi_sral_8                        
+0000456c  __mspabi_sral_9                        
+00013f84  __mspabi_srall                         
+00004aa6  __mspabi_srll                          
+00004608  __mspabi_srll_1                        
+000045e4  __mspabi_srll_10                       
+000045e0  __mspabi_srll_11                       
+000045dc  __mspabi_srll_12                       
+000045d8  __mspabi_srll_13                       
+000045d4  __mspabi_srll_14                       
+000045d0  __mspabi_srll_15                       
+00004604  __mspabi_srll_2                        
+00004600  __mspabi_srll_3                        
+000045fc  __mspabi_srll_4                        
+000045f8  __mspabi_srll_5                        
+000045f4  __mspabi_srll_6                        
+000045f0  __mspabi_srll_7                        
+000045ec  __mspabi_srll_8                        
+000045e8  __mspabi_srll_9                        
+00004648  __mspabi_srlll                         
+000046ee  __mspabi_subd                          
+000044aa  _c_int00_noargs_mpu                    
+00004de2  _ctypes_                               
 0000fffe  _reset_vector                          
 00002360  _stack                                 
-00004a96  _system_post_cinit                     
-00004a92  _system_pre_init                       
-00004a86  abort                                  
-00004a6a  abs                                    
-000048ac  active_all                             
-00013b5c  atoi                                   
+00004b40  _system_post_cinit                     
+00004b3c  _system_pre_init                       
+00004b36  abort                                  
+00004b12  abs                                    
+00004932  active_all                             
+00013c34  atoi                                   
 00001e3a  calcCsum                               
-0000490a  clockConfigure                         
+00004990  clockConfigure                         
 00001e36  command                                
-000046d4  copysign                               
-000046d4  copysignl                              
+0000477c  copysign                               
+0000477c  copysignl                              
 00001e3e  csumByteReceived                       
 00001e3d  csumError                              
 00001e44  currentMode                            
-00004956  delay_ms                               
-00001e5c  errno                                  
+000049dc  delay_ms                               
+00001e60  errno                                  
 00001e41  errorCode                              
 00004400  fram_ipe_end                           
 00004400  fram_ipe_start                         
 00004400  fram_rw_start                          
 00004400  fram_rx_start                          
-00001e52  frameComplete                          
-00001e4e  frameTimeout                           
-000134c6  frexp                                  
-000134c6  frexpl                                 
-00001d30  g_aucRxBuffer                          
-00001e54  g_uiRxBufferGet                        
-00001e56  g_uiRxBufferPut                        
-00004a74  initGLED                               
-00004a2a  initREDLED                             
-00012b0e  ldexp                                  
-00012b0e  ldexpl                                 
-000045dc  main                                   
-000047d6  memccpy                                
-000049c2  memcpy                                 
-0000496c  memset                                 
-00001e53  messageTimeOut                         
-00001e50  messageTimeout                         
+00001e54  frameComplete                          
+00001e50  frameTimeout                           
+00013514  frexp                                  
+00013514  frexpl                                 
+00001e56  g_uiCommsTimeout                       
+00001e58  head                                   
+00004b1c  initGLED                               
+00004ad2  initREDLED                             
+00012b5c  ldexp                                  
+00012b5c  ldexpl                                 
+000046b8  main                                   
+0000487e  memccpy                                
+00004a5c  memcpy                                 
+000049f2  memset                                 
+00001e55  messageTimeOut                         
+00001e52  messageTimeout                         
 0000a501  mpu_ctl0_value                         
 00001513  mpu_sam_value                          
 00000440  mpu_segment_border1                    
 00000440  mpu_segment_border2                    
-00013e78  p2pRxByte                              
-00004a38  p2pTxByte                              
-00004924  p2pTxData                              
+00013e56  p2pRxByte                              
+00004ae0  p2pTxByte                              
+000049aa  p2pTxData                              
 00001e42  packetACKed                            
 00001e3c  packetComplete                         
 00001e40  packetNAKed                            
-00001e58  pollCounter                            
-000138c2  printInt                               
+00001e5c  pollCounter                            
+00013992  printInt                               
 00001e38  rcvCsum                                
 00001e4a  readDualGasCallBack                    
 00001e46  readGasCallBack                        
 00001e30  receivingPacket                        
 00001c00  rxBuffer                               
 00001e32  rxCount                                
-00012b0e  scalbn                                 
-00012b0e  scalbnl                                
-00013bbe  snprintf                               
-000048ee  strchr                                 
-00004a46  strlen                                 
-00001e5a  timerFlag                              
-00004a8c  toggleGLED                             
-000049fa  toupper                                
-00013c20  uart_init                              
+00001e4e  rxIndex                                
+00012b5c  scalbn                                 
+00012b5c  scalbnl                                
+00013c96  snprintf                               
+00004974  strchr                                 
+00004aee  strlen                                 
+00001e5a  tail                                   
+00001e5e  timerFlag                              
+00004a94  toupper                                
+00013890  uart_init                              
 00001e35  waitingForCommand                      
-00004998  wcslen                                 
+00004a1e  wcslen                                 
 
 
 GLOBAL SYMBOLS: SORTED BY Symbol Address 
@@ -2275,7 +2285,7 @@ address   name
 000009cf  AESAXIN_H                              
 00001513  mpu_sam_value                          
 00001c00  rxBuffer                               
-00001d30  g_aucRxBuffer                          
+00001d30  RX_Buffer                              
 00001e30  receivingPacket                        
 00001e32  rxCount                                
 00001e34  DLEReceived                            
@@ -2293,15 +2303,17 @@ address   name
 00001e44  currentMode                            
 00001e46  readGasCallBack                        
 00001e4a  readDualGasCallBack                    
-00001e4e  frameTimeout                           
-00001e50  messageTimeout                         
-00001e52  frameComplete                          
-00001e53  messageTimeOut                         
-00001e54  g_uiRxBufferGet                        
-00001e56  g_uiRxBufferPut                        
-00001e58  pollCounter                            
-00001e5a  timerFlag                              
-00001e5c  errno                                  
+00001e4e  rxIndex                                
+00001e50  frameTimeout                           
+00001e52  messageTimeout                         
+00001e54  frameComplete                          
+00001e55  messageTimeOut                         
+00001e56  g_uiCommsTimeout                       
+00001e58  head                                   
+00001e5a  tail                                   
+00001e5c  pollCounter                            
+00001e5e  timerFlag                              
+00001e60  errno                                  
 00002360  _stack                                 
 00002400  __STACK_END                            
 00004400  USCI_A1_ISR                            
@@ -2309,111 +2321,117 @@ address   name
 00004400  fram_ipe_start                         
 00004400  fram_rw_start                          
 00004400  fram_rx_start                          
-00004466  Timer_A0_ISR                           
-0000448a  _c_int00_noargs_mpu                    
-000044aa  __TI_ISR_TRAP                          
-000044b2  __mspabi_sral_15                       
-000044b6  __mspabi_sral_14                       
-000044ba  __mspabi_sral_13                       
-000044be  __mspabi_sral_12                       
-000044c2  __mspabi_sral_11                       
-000044c6  __mspabi_sral_10                       
-000044ca  __mspabi_sral_9                        
-000044ce  __mspabi_sral_8                        
-000044d2  __mspabi_sral_7                        
-000044d6  __mspabi_sral_6                        
-000044da  __mspabi_sral_5                        
-000044de  __mspabi_sral_4                        
-000044e2  __mspabi_sral_3                        
-000044e6  __mspabi_sral_2                        
-000044ea  __mspabi_sral_1                        
-000044f0  __mspabi_slll_15                       
-000044f4  __mspabi_slll_14                       
-000044f8  __mspabi_slll_13                       
-000044fc  __mspabi_slll_12                       
-00004500  __mspabi_slll_11                       
-00004504  __mspabi_slll_10                       
-00004508  __mspabi_slll_9                        
-0000450c  __mspabi_slll_8                        
-00004510  __mspabi_slll_7                        
-00004514  __mspabi_slll_6                        
-00004518  __mspabi_slll_5                        
-0000451c  __mspabi_slll_4                        
-00004520  __mspabi_slll_3                        
-00004524  __mspabi_slll_2                        
-00004528  __mspabi_slll_1                        
-0000452e  __mspabi_srll_15                       
-00004532  __mspabi_srll_14                       
-00004536  __mspabi_srll_13                       
-0000453a  __mspabi_srll_12                       
-0000453e  __mspabi_srll_11                       
-00004542  __mspabi_srll_10                       
-00004546  __mspabi_srll_9                        
-0000454a  __mspabi_srll_8                        
-0000454e  __mspabi_srll_7                        
-00004552  __mspabi_srll_6                        
-00004556  __mspabi_srll_5                        
-0000455a  __mspabi_srll_4                        
-0000455e  __mspabi_srll_3                        
-00004562  __mspabi_srll_2                        
-00004566  __mspabi_srll_1                        
-0000456c  __mspabi_srlll                         
-000045dc  main                                   
-00004612  UART_sendPointer                       
-00004646  __mspabi_subd                          
-00004678  RequestLiveData2                       
-000046a6  __mspabi_negd                          
-000046d4  copysign                               
-000046d4  copysignl                              
-00004702  __mpu_init                             
-0000472e  __mspabi_mpyull_f5hw                   
-0000475a  __mspabi_divi                          
-0000475a  __mspabi_remi                          
-00004786  PacketChecksumError                    
-00004786  PacketTimedOut                         
-000047ae  __mspabi_fixdi                         
-000047d6  memccpy                                
-000047fc  NAKReceived                            
-00004820  __TI_zero_init_nomemset                
-00004844  __mspabi_mpyl_f5hw                     
-00004868  RequestGasReading                      
-0000488a  UART_Read                              
-000048ac  active_all                             
-000048ee  strchr                                 
-0000490a  clockConfigure                         
-00004924  p2pTxData                              
-0000493e  __mspabi_mpyi_f5hw                     
-00004956  delay_ms                               
-0000496c  memset                                 
-00004982  __mspabi_divu                          
-00004982  __mspabi_remu                          
-00004998  wcslen                                 
-000049ae  Timer_Init                             
-000049c2  memcpy                                 
-000049d6  UART_sendString                        
-000049e8  __TI_decompress_none                   
-000049fa  toupper                                
-00004a0c  __mspabi_srll                          
-00004a1c  UART_sendChar                          
-00004a2a  initREDLED                             
-00004a38  p2pTxByte                              
-00004a46  strlen                                 
-00004a54  __mspabi_fltid                         
-00004a60  PacketSent                             
-00004a6a  abs                                    
-00004a74  initGLED                               
-00004a7e  UpdateChecksum                         
-00004a86  C$$EXIT                                
-00004a86  abort                                  
-00004a8c  toggleGLED                             
-00004a92  _system_pre_init                       
-00004a96  _system_post_cinit                     
-00004c06  _ctypes_                               
-00004e5a  __TI_Handler_Table_Base                
-00004e66  __TI_Handler_Table_Limit               
-00004e78  __TI_CINIT_Base                        
-00004e88  __TI_CINIT_Limit                       
-00004e88  __TI_CINIT_Warm                        
+00004450  Timer_A1_ISR                           
+00004484  Timer_A0_ISR                           
+000044aa  _c_int00_noargs_mpu                    
+000044ca  __TI_ISR_TRAP                          
+000044d2  WDT_ISR                                
+000044d6  __mspabi_divli                         
+000044d6  __mspabi_remli                         
+00004516  UART_sendFloat                         
+00004554  __mspabi_sral_15                       
+00004558  __mspabi_sral_14                       
+0000455c  __mspabi_sral_13                       
+00004560  __mspabi_sral_12                       
+00004564  __mspabi_sral_11                       
+00004568  __mspabi_sral_10                       
+0000456c  __mspabi_sral_9                        
+00004570  __mspabi_sral_8                        
+00004574  __mspabi_sral_7                        
+00004578  __mspabi_sral_6                        
+0000457c  __mspabi_sral_5                        
+00004580  __mspabi_sral_4                        
+00004584  __mspabi_sral_3                        
+00004588  __mspabi_sral_2                        
+0000458c  __mspabi_sral_1                        
+00004592  __mspabi_slll_15                       
+00004596  __mspabi_slll_14                       
+0000459a  __mspabi_slll_13                       
+0000459e  __mspabi_slll_12                       
+000045a2  __mspabi_slll_11                       
+000045a6  __mspabi_slll_10                       
+000045aa  __mspabi_slll_9                        
+000045ae  __mspabi_slll_8                        
+000045b2  __mspabi_slll_7                        
+000045b6  __mspabi_slll_6                        
+000045ba  __mspabi_slll_5                        
+000045be  __mspabi_slll_4                        
+000045c2  __mspabi_slll_3                        
+000045c6  __mspabi_slll_2                        
+000045ca  __mspabi_slll_1                        
+000045d0  __mspabi_srll_15                       
+000045d4  __mspabi_srll_14                       
+000045d8  __mspabi_srll_13                       
+000045dc  __mspabi_srll_12                       
+000045e0  __mspabi_srll_11                       
+000045e4  __mspabi_srll_10                       
+000045e8  __mspabi_srll_9                        
+000045ec  __mspabi_srll_8                        
+000045f0  __mspabi_srll_7                        
+000045f4  __mspabi_srll_6                        
+000045f8  __mspabi_srll_5                        
+000045fc  __mspabi_srll_4                        
+00004600  __mspabi_srll_3                        
+00004604  __mspabi_srll_2                        
+00004608  __mspabi_srll_1                        
+0000460e  __mspabi_sllll                         
+00004648  __mspabi_srlll                         
+000046b8  main                                   
+000046ee  __mspabi_subd                          
+00004720  RequestLiveData2                       
+0000474e  __mspabi_negd                          
+0000477c  copysign                               
+0000477c  copysignl                              
+000047aa  __mpu_init                             
+000047d6  __mspabi_mpyull_f5hw                   
+00004802  __mspabi_divi                          
+00004802  __mspabi_remi                          
+0000482e  PacketChecksumError                    
+0000482e  PacketTimedOut                         
+00004856  __mspabi_fixdi                         
+0000487e  memccpy                                
+000048a4  NAKReceived                            
+000048c8  __TI_zero_init_nomemset                
+000048ec  __mspabi_mpyl_f5hw                     
+00004910  RequestGasReading                      
+00004932  active_all                             
+00004974  strchr                                 
+00004990  clockConfigure                         
+000049aa  p2pTxData                              
+000049c4  __mspabi_mpyi_f5hw                     
+000049dc  delay_ms                               
+000049f2  memset                                 
+00004a08  __mspabi_divu                          
+00004a08  __mspabi_remu                          
+00004a1e  wcslen                                 
+00004a34  Timer1_A_Setup                         
+00004a48  Timer_Init                             
+00004a5c  memcpy                                 
+00004a70  UART_sendString                        
+00004a82  __TI_decompress_none                   
+00004a94  toupper                                
+00004aa6  __mspabi_srll                          
+00004ab6  UART_sendChar                          
+00004ac4  Watchdog_Init                          
+00004ad2  initREDLED                             
+00004ae0  p2pTxByte                              
+00004aee  strlen                                 
+00004afc  __mspabi_fltid                         
+00004b08  PacketSent                             
+00004b12  abs                                    
+00004b1c  initGLED                               
+00004b26  UpdateChecksum                         
+00004b2e  Watchdog_Refresh                       
+00004b36  C$$EXIT                                
+00004b36  abort                                  
+00004b3c  _system_pre_init                       
+00004b40  _system_post_cinit                     
+00004de2  _ctypes_                               
+00004f86  __TI_Handler_Table_Base                
+00004f92  __TI_Handler_Table_Limit               
+00004fa4  __TI_CINIT_Base                        
+00004fb4  __TI_CINIT_Limit                       
+00004fb4  __TI_CINIT_Warm                        
 0000a501  mpu_ctl0_value                         
 0000ffcc  __TI_int30                             
 0000ffce  __TI_int31                             
@@ -2446,48 +2464,45 @@ address   name
 00010b92  __mspabi_divull                        
 00010ee0  __TI_printfi                           
 00011186  __mspabi_mpyd                          
-00011b1e  __mspabi_divd                          
-00012126  CharReceived                           
-000122fe  SendDynamentPacket                     
-000129aa  __TI_frcmpyd                           
-00012b0e  ldexp                                  
-00012b0e  ldexpl                                 
-00012b0e  scalbn                                 
-00012b0e  scalbnl                                
-00012ed8  ReadLiveData2Response                  
-000131da  __mspabi_cmpd                          
-0001337a  ReadLiveDataResponse                   
-000134c6  frexp                                  
-000134c6  frexpl                                 
-0001356c  __mspabi_fltlid                        
-0001360a  DualReadingReceived                    
-000137be  ProcessReceivedPacket                  
-00013842  __TI_ltoa                              
-000138c2  printInt                               
-000139ba  __TI_decompress_lzss                   
-00013a30  __mspabi_fixdli                        
-00013a96  __mspabi_cvtfd                         
-00013afa  DynamentCommsHandler                   
-00013b5c  atoi                                   
-00013bbe  snprintf                               
-00013c20  uart_init                              
-00013c82  __mspabi_mpyll_f5hw                    
-00013cde  __mspabi_divul                         
-00013cde  __mspabi_remul                         
-00013d36  UART_sendHex                           
-00013d8c  __TI_auto_init_nobinit_nopinit_hold_wdt
-00013e2e  __mspabi_cmpf                          
-00013e78  p2pRxByte                              
-00013ebe  InitialiseDynamentComms                
-00013ebe  Reset                                  
-00013f00  __mspabi_srall                         
-00013f40  __mspabi_divli                         
-00013f40  __mspabi_remli                         
-00013f80  UART_sendFloat                         
-00013fbe  __mspabi_sllll                         
+000118fa  CharReceived                           
+00011d44  __mspabi_divd                          
+0001234c  SendDynamentPacket                     
+000129f8  __TI_frcmpyd                           
+00012b5c  ldexp                                  
+00012b5c  ldexpl                                 
+00012b5c  scalbn                                 
+00012b5c  scalbnl                                
+00012f26  ReadLiveData2Response                  
+00013228  __mspabi_cmpd                          
+000133c8  ReadLiveDataResponse                   
+00013514  frexp                                  
+00013514  frexpl                                 
+000135ba  __mspabi_fltlid                        
+00013658  DualReadingReceived                    
+0001380c  ProcessReceivedPacket                  
+00013890  uart_init                              
+00013912  __TI_ltoa                              
+00013992  printInt                               
+00013a8a  __TI_decompress_lzss                   
+00013b00  DynamentCommsHandler                   
+00013b6a  __mspabi_fixdli                        
+00013bd0  __mspabi_cvtfd                         
+00013c34  atoi                                   
+00013c96  snprintf                               
+00013cf8  __mspabi_mpyll_f5hw                    
+00013d54  __mspabi_divul                         
+00013d54  __mspabi_remul                         
+00013dac  UART_sendHex                           
+00013e02  __TI_auto_init_nobinit_nopinit_hold_wdt
+00013e56  p2pRxByte                              
+00013ef8  __mspabi_cmpf                          
+00013f42  InitialiseDynamentComms                
+00013f42  Reset                                  
+00013f84  __mspabi_srall                         
+00013fc4  UART_sendPointer                       
 ffffffff  __TI_pprof_out_hndl                    
 ffffffff  __TI_prof_data_size                    
 ffffffff  __TI_prof_data_start                   
 ffffffff  __c_args__                             
 
-[999 symbols]
+[1004 symbols]
