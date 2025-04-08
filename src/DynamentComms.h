@@ -34,12 +34,12 @@
 
 /* Global type definitions ----------------------------------------------------*/
 typedef void (*GetDualFloat_CallBack_t)(int valueStatus, float fval1, float fval2);
-
+extern bool receivingPacket;
 
 /* Public function prototypes */
 void InitialiseDynamentComms(void);
 void DynamentCommsHandler(void);
 void RequestLiveDataSimple(GetFloat_CallBack_t cb);
 void RequestLiveData2(GetDualFloat_CallBack_t cb);
-
+extern void CharReceived(uint8_t chr);
 #endif // DYNAMENTCOMMS_H

@@ -45,13 +45,13 @@ void uart_init(void)
     UCA1IE |= UCRXIE;
 
     // Debugging output
-    UART_sendString("UCA1CTLW0 After Release: ");
+    DEBUG_STRING("UCA1CTLW0 After Release: ");
     UART_sendHex(UCA1CTLW0);
-    UART_sendString("\n");
+    DEBUG_STRING("\n");
 
-    UART_sendString("CSCTL1: ");
+    DEBUG_STRING("CSCTL1: ");
     UART_sendHex(CSCTL1);
-    UART_sendString("\n");
+    DEBUG_STRING("\n");
 
     // Manually trigger the interrupt for testing (optional)
    // UCA1IFG |= UCRXIFG;  // Force RX ISR to execute

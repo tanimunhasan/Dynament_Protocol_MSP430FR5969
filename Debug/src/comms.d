@@ -19,10 +19,10 @@ src/comms.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-msp430_21.6.1.LTS/include
 src/comms.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-msp430_21.6.1.LTS/include/stdbool.h
 src/comms.obj: ../src/comms.h
 src/comms.obj: C:/Users/tanim/OneDrive/Desktop/Git\ Project/Dynament_Protocol/main.h
-src/comms.obj: ../src/DynamentComms.h
-src/comms.obj: C:/Users/tanim/OneDrive/Desktop/Git\ Project/Dynament_Protocol/src/ModbusComms.h
 src/comms.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-msp430_21.6.1.LTS/include/stdio.h
 src/comms.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-msp430_21.6.1.LTS/include/stdarg.h
+src/comms.obj: ../src/DynamentComms.h
+src/comms.obj: C:/Users/tanim/OneDrive/Desktop/Git\ Project/Dynament_Protocol/src/ModbusComms.h
 src/comms.obj: ../src/studiolib.h
 
 ../src/comms.c:
@@ -63,13 +63,13 @@ C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-msp430_21.6.1.LTS/include/stdbool.h:
 
 C:/Users/tanim/OneDrive/Desktop/Git\ Project/Dynament_Protocol/main.h:
 
-../src/DynamentComms.h:
-
-C:/Users/tanim/OneDrive/Desktop/Git\ Project/Dynament_Protocol/src/ModbusComms.h:
-
 C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-msp430_21.6.1.LTS/include/stdio.h:
 
 C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-msp430_21.6.1.LTS/include/stdarg.h:
+
+../src/DynamentComms.h:
+
+C:/Users/tanim/OneDrive/Desktop/Git\ Project/Dynament_Protocol/src/ModbusComms.h:
 
 ../src/studiolib.h:
 

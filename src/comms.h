@@ -2,7 +2,7 @@
  * comms.h
  *
  *  Created on: 10 Mar 2025
- *      Author: tanim
+ *      Author: Sayed
  */
 
 #ifndef SRC_COMMS_H_
@@ -16,12 +16,12 @@ extern volatile int frameTimeout;
 extern volatile int messageTimeout;
 extern volatile bool frameComplete;
 extern volatile bool messageTimeOut;
-
+extern volatile uint16_t rxCount;
 
 // Circular buffer for UART reception
 extern uint8_t RX_Buffer[P2P_BUFFER_SIZE]  __attribute__((aligned(16)));
-extern volatile uint16_t head;
-extern volatile uint16_t tail;
+extern volatile uint16_t rxHead;
+extern volatile uint16_t rxTail;
 
 enum
 {

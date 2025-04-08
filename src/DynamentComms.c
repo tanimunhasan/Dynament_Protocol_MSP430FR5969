@@ -16,8 +16,8 @@
 
 // Global variables for packet reception and state
 bool receivingPacket = false;
-uint8_t volatile rxBuffer[DYNAMENT_MAX_PACKET_SIZE];
-unsigned int rxCount = 0;
+uint8_t rxBuffer[DYNAMENT_MAX_PACKET_SIZE];
+unsigned int DrxCount = 0;
 bool DLEReceived = false;
 bool waitingForCommand = false;
 uint8_t command = 0;
@@ -49,7 +49,7 @@ GetDualFloat_CallBack_t readDualGasCallBack = 0;        // callback pointer to r
 uint16_t UpdateChecksum(uint16_t currentCRC, uint8_t newByte);
 uint16_t UpdateCRCTab(uint16_t index);
 void Reset(void);
-void CharReceived(uint8_t chr);
+
 bool SendDynamentPacket(uint8_t cmd, uint8_t variableID, uint8_t dlen, uint8_t *dataPtr);
 void ProcessReceivedPacket(void);
 void ReadLiveDataResponse(uint8_t *dataPtr, int len);
@@ -63,44 +63,56 @@ void PacketSent(void);
 
 // Public functions
 //------------------------------------------------------------------------------
-void InitialiseDynamentComms(void)
-{
-    Reset();                // set all the packet reception variables to their default to await an incoming packet
-}
 
 
 
 void DynamentCommsHandler(void)
 {
     uint8_t ch;
-    uint8_t received = 0;
 
     while(p2pRxByte(&ch) == p2pRxOk)
     {
-        received = 1;
-        UART_sendString("CharReceived Called with: ");
+
+        DEBUG_STRING("CharReceived Called with: ");
         UART_sendHex(ch);
-        UART_sendString("\n");
+        DEBUG_STRING("\n");
         CharReceived(ch);
     }
-    if (!received) {
-        UART_sendString("DynamentCommsHandler: No Data Processed\n");
-    }
+
+
 
     // If a frame timeout occurs (incomplete frame), handle it
-    if(frameComplete)
+
+    if (frameComplete)
     {
-        UART_sendString("Frame Complete\n");
+        DEBUG_STRING("Frame timeout triggered\n");
         frameComplete = false;
-        PacketTimedOut();
+
+        if (!packetComplete)
+        {
+            DEBUG_STRING("Frame Timeout without complete packet\n");
+            DEBUG_STRING("rxBuffer contents (partial): ");
+            int i;
+            for (i = 0; i < DrxCount; i++)
+            {
+                UART_sendHex(rxBuffer[i]);
+            }
+            DEBUG_STRING("\n");
+
+            PacketTimedOut();  // only reset if truly incomplete
+            readyToPoll = true;  // <--- ADD THIS
+        }
     }
+
 
     // Check to see if no response has been received to a previously transmitted packet
     if(messageTimeOut)
     {
-        UART_sendString("Message Timeout\n");
+        DEBUG_STRING("Message Timeout\n");
         messageTimeOut = false;
+        readyToPoll = true;  // <--- ADD THIS
     }
+
 }
 
 
@@ -117,7 +129,7 @@ uint16_t UpdateChecksum(uint16_t currentCRC, uint8_t newByte)
     }
     else
     {
-        retVal = (uint16_t)(currentCRC + newByte);
+        retVal = (uint16_t) (currentCRC + (uint16_t) newByte);
     }
     return retVal;
 }
@@ -126,18 +138,19 @@ uint16_t UpdateCRCTab(uint16_t index)
 {
     uint16_t uiIndex;
     uint16_t uiCrcValue = 0, uiTempCrcValue;
+    uiCrcValue = 0;
     uiTempCrcValue = (uint16_t)(((unsigned int)index) << 8);
     for(uiIndex = 0; uiIndex < 8; uiIndex++)
     {
         if (((uiCrcValue ^ uiTempCrcValue) & CRC_VALUE_MASK) > 0)
         {
-            uiCrcValue = (uint16_t)((uiCrcValue << 1) ^ CRC_POLYNOMIAL);
+            uiCrcValue = (uint16_t)(uint16_t)((uiCrcValue << 1) ^ (uint16_t)CRC_POLYNOMIAL);
         }
         else
         {
-            uiCrcValue = (uint16_t)(uiCrcValue << 1);
+            uiCrcValue = (uint16_t)(unsigned int)(uiCrcValue << 1);
         }
-        uiTempCrcValue = (uint16_t)(uiTempCrcValue << 1);
+        uiTempCrcValue = (uint16_t)(unsigned int)(uiTempCrcValue << 1);
     }
     return uiCrcValue;
 }
@@ -148,9 +161,9 @@ uint16_t UpdateCRCTab(uint16_t index)
 void Reset(void)
 {
     receivingPacket = false;
-    messageTimeOut = 0;
+    messageTimeout = 0;
     frameTimeout = 0;
-    rxCount = 0;
+    DrxCount = 0;
     DLEReceived = false;
     waitingForCommand = false;
     command = 0;
@@ -164,6 +177,11 @@ void Reset(void)
     packetACKed = false;
     errorCode = 0;
 }
+void InitialiseDynamentComms(void)
+{
+
+    Reset();                // set all the packet reception variables to their default to await an incoming packet
+}
 
 void PacketSent(void)
 {
@@ -175,121 +193,128 @@ void PacketSent(void)
 void CharReceived(uint8_t chr)
 {
 
-    UART_sendString("CharReceived called with: ");
-    UART_sendHex(chr);
-    UART_sendString("\n");
-
-    if(rxCount >= DYNAMENT_MAX_PACKET_SIZE)
+    if (DrxCount >= DYNAMENT_MAX_PACKET_SIZE)  // buffer full so reset - this is a bad packet
     {
-        Reset();
-        return;
+
+        DEBUG_STRING("Buffer full, dropping byte\n");
+
+         Reset();
     }
 
 
-
-    if(chr == DLE && !EOFReceived)
+    if (chr == DLE && !EOFReceived)
     {
-        if(!receivingPacket)
+        if (!receivingPacket)
         {
             receivingPacket = true;
-            rxCount = 0;
-            rxBuffer[rxCount++] = chr;
+            DrxCount = 0;
+            rxBuffer[DrxCount++] = chr;
             calcCsum = UpdateChecksum(calcCsum, chr);
-            DLEReceived = true;
+            DLEReceived |= true;
         }
-        else if(DLEReceived)
+        else if (DLEReceived) // last char was a DLE so this is a uint8_t stuffed DLE character in the data (unless the checksum is being received whicvh is not uint8_t stuffed
         {
-            // This is a stuffed DLE character: update checksum but do not add twice.
+            // ignore this char as it was uint8_t stuffed and is already in the rx buffer but do include it in the checksum
+            // This is a stuffed DLE (i.e. two 0x10s in a row)
+            DEBUG_STRING("Stuffed DLE detected\n");
+            rxBuffer[DrxCount++] = chr;
             calcCsum = UpdateChecksum(calcCsum, chr);
         }
-        else
+        else  // add characters to array as ber normal  but set DLE flag
         {
             DLEReceived = true;
-            rxBuffer[rxCount++] = chr;
+            rxBuffer[DrxCount++] = chr;
             calcCsum = UpdateChecksum(calcCsum, chr);
         }
+
     }
-    else if(chr == EOF && DLEReceived && !EOFReceived)
+    else if (chr == EOF && DLEReceived && !EOFReceived)  // this is the end of frame
     {
-        UART_sendString("EOF Received!\n");
-        rxBuffer[rxCount++] = chr;
+        rxBuffer[DrxCount++] = chr;
         calcCsum = UpdateChecksum(calcCsum, chr);
         EOFReceived = true;
         csumByteReceived = 0;
         rcvCsum = 0;
+        DEBUG_STRING("EXPECTING 2 CHECKSUM BYTES NEXT\n");
+
     }
-    else if(EOFReceived)
+    else if (EOFReceived)  // receiving the checksum
     {
-        rxBuffer[rxCount++] = chr;
-        csumByteReceived++;
-
-        UART_sendString("Checksum byte received: ");
-        UART_sendHex(chr);
-        UART_sendString("\n");
-
-        if(csumByteReceived >= 2)
+        rxBuffer[DrxCount++] = chr;
+        ++csumByteReceived;
+        if (csumByteReceived >= 2)  // end of checksum receivin and end of packet
         {
-            UART_sendString("Received Checksum: ");
-            UART_sendHex(rcvCsum);
-            UART_sendString("\n");
-            rcvCsum = (uint16_t)((rxBuffer[rxCount - 2] * 0x100) + rxBuffer[rxCount - 1]);
+            rcvCsum = (uint16_t)((rxBuffer[DrxCount - 2] * 0x100) + rxBuffer[DrxCount - 1]);
             packetComplete = true;
-            if(rcvCsum != calcCsum)
+            if (rcvCsum != calcCsum)
             {
-                csumError = true;
-                UART_sendString("Checksum Error Detected!\n");
+                 csumError = true;
+                 DEBUG_STRING("Checksum Mismatch\n");
+                 printInt(rcvCsum);
+                 DEBUG_STRING(" vs ");
+                 printInt(calcCsum);
+                 DEBUG_STRING("\n");
             }
             else
             {
-                UART_sendString("Checksum Matched!\n");
+                DEBUG_STRING("Checksum OK\n");
             }
         }
+
     }
-    else if(packetNAKed)
+    /* Test should continue from here*/
+    else if (packetNAKed)  // the packet has returned an error - this is the last uint8_t which is an error code
     {
         errorCode = chr;
         packetComplete = true;
-        rxBuffer[rxCount++] = chr;
+        rxBuffer[DrxCount++] = chr;
     }
-    else if(receivingPacket)
+    else if (receivingPacket) // normal character - added to the buffer if a packet reception is in progress
     {
-        if(DLEReceived && rxCount == 1)
+        if (DLEReceived && rxCount == 1) //
         {
-            command = chr;
-            if(command == NAK)
+            command = chr;   // the second uint8_t in the packet (if a DLE was the first) is the command character
+            if (command == NAK)
+            {
                 packetNAKed = true;
-            if(command == ACK)
+            }
+            if (command == ACK)
             {
                 packetACKed = true;
                 packetComplete = true;
             }
         }
-        rxBuffer[rxCount++] = chr;
+        rxBuffer[DrxCount++] = chr;
         calcCsum = UpdateChecksum(calcCsum, chr);
     }
 
-    if(chr != DLE)
-    {
-        DLEReceived = false;
-    }
-
+    if (chr != DLE) DLEReceived = false;
+    if (DrxCount > 80)
+        {
+            DEBUG_STRING("Too many bytes! Resetting.\n");
+            Reset();
+            return;
+        }
     frameTimeout = DYNAMENT_FRAME_TIMEOUT;
-
-    if(packetComplete)
+    DEBUG_STRING("rxCount: ");
+    printInt(DrxCount);
+    DEBUG_STRING("\n");
+    if (packetComplete)  // a complete packet has actually been received  -act on it according to the various flags
     {
-        if(packetACKed)
+        if (packetACKed)
             ACKReceived();
-        else if(packetNAKed)
+        else if (packetNAKed)
             NAKReceived();
-        else if(csumError)
+        else if (csumError)
             PacketChecksumError();
-        else
+        else  // complete data packet received intact without error
+        {
             ProcessReceivedPacket();
+        }
 
         Reset();
     }
 }
-
 /*
  * Function: Create a packet of data in the Dynament protocol
    Inputs : cmd - the type of packet (read or write variable typically)
@@ -312,22 +337,22 @@ bool SendDynamentPacket(uint8_t cmd, uint8_t variableID, uint8_t dlen, uint8_t *
     txBuf[txBufPtr++] = DLE;
     csum = UpdateChecksum(csum, DLE);
     txBuf[txBufPtr++] = cmd;
-    csum = UpdateChecksum(csum, cmd);
+    csum = UpdateChecksum(csum, (uint16_t)cmd);
     if(cmd == READ_VAR)
     {
         txBuf[txBufPtr++] = variableID;
-        csum = UpdateChecksum(csum, variableID);
+        csum = UpdateChecksum(csum, (uint16_t)variableID);
     }
     else if(cmd == WRITE_REQUEST)
     {
         txBuf[txBufPtr++] = WRITE_PASSWORD_1;
-        csum = UpdateChecksum(csum, WRITE_PASSWORD_1);
+        csum = UpdateChecksum(csum, (uint16_t)WRITE_PASSWORD_1);
 
         txBuf[txBufPtr++] = WRITE_PASSWORD_2;
-        csum = UpdateChecksum(csum, WRITE_PASSWORD_2);
+        csum = UpdateChecksum(csum, (uint16_t)WRITE_PASSWORD_2);
 
         txBuf[txBufPtr++] = variableID;
-        csum = UpdateChecksum(csum, variableID);
+        csum = UpdateChecksum(csum, (uint16_t)variableID);
     }
 
     if(dlen > 0)
@@ -335,26 +360,26 @@ bool SendDynamentPacket(uint8_t cmd, uint8_t variableID, uint8_t dlen, uint8_t *
         if(dlen == DLE)
         {
             txBuf[txBufPtr++] = DLE;
-            csum = UpdateChecksum(csum, DLE);
+            csum = UpdateChecksum(csum, (uint16_t)DLE);
         }
         txBuf[txBufPtr++] = dlen;
-        csum = UpdateChecksum(csum, dlen);
+        csum = UpdateChecksum(csum, (uint16_t)dlen);
         for(x = 0; x < dlen; x++)
         {
             if(dataPtr[x] == DLE)
             {
                 txBuf[txBufPtr++] = DLE;
-                csum = UpdateChecksum(csum, DLE);
+                csum = UpdateChecksum(csum,(uint16_t) DLE);
             }
             txBuf[txBufPtr++] = dataPtr[x];
-            csum = UpdateChecksum(csum, dataPtr[x]);
+            csum = UpdateChecksum(csum, (uint16_t)dataPtr[x]);
         }
     }
     txBuf[txBufPtr++] = DLE;
-    csum = UpdateChecksum(csum, DLE);
+    csum = UpdateChecksum(csum, (uint16_t)DLE);
 
     txBuf[txBufPtr++] = EOF;
-    csum = UpdateChecksum(csum, EOF);
+    csum = UpdateChecksum(csum, (uint16_t)EOF);
 
     // Append checksum (two bytes)
     txBuf[txBufPtr++] = (uint8_t)((csum >> 8) & 0x00ff);
@@ -368,10 +393,10 @@ bool SendDynamentPacket(uint8_t cmd, uint8_t variableID, uint8_t dlen, uint8_t *
     PacketSent();
 
     unsigned int idx;
-    UART_sendString ("TX: ");
+    DEBUG_STRING ("TX: ");
     for (idx=0; idx < txBufPtr; idx++)
         UART_sendHex(txBuf[idx]);
-    UART_sendString(" <Tx End>\n");
+    DEBUG_STRING(" <Tx End>\n");
     //*** END TEST */
 
 
@@ -382,21 +407,22 @@ bool SendDynamentPacket(uint8_t cmd, uint8_t variableID, uint8_t dlen, uint8_t *
 
 void ProcessReceivedPacket(void)
 {
+    DEBUG_STRING("Entered ProcessReceivedPacket()\n");
     uint8_t cmd = rxBuffer[1];
     uint8_t len = rxBuffer[2];
     unsigned int x;
     int i;
     //***TEST*** - print out received character for debug purposes
-    UART_sendString("Raw Packet :");
-    for(i = 0; i<sizeof(rxCount); i++){
+    DEBUG_STRING("Raw Packet :");
+    for(i = 0; i < DrxCount; i++){
         UART_sendHex(rxBuffer[i]);
     }
-    UART_sendString("\n");
+    DEBUG_STRING("\n");
     //***END TEST*** */
     if(cmd == DAT)      // data packet response to a read variable received
     {
         uint8_t rcvData[200];
-        for(x = 0; x < len && (x + 3) < rxCount; x++)
+        for(x = 0; x < len && (x + 3) < DrxCount; x++)
         {
             rcvData[x] = rxBuffer[x + 3];
         }
@@ -437,6 +463,15 @@ void ReadLiveDataResponse(uint8_t *dataPtr, int len)
     float *fPtr = (float *)&intVal;
     gasValue = *fPtr;
 
+
+    DEBUG_STRING("Parsed Gas Value: ");
+    printInt(gasValue);
+    DEBUG_STRING("\n");
+
+    DEBUG_STRING("Parsed StatusVal1: ");
+    printInt(statusVal1);
+    DEBUG_STRING("\n");
+
     // call the callback routine to rerpot the received gas reading to the calling layer
     if(currentMode == CommsModeRequestingLiveDataSimple && readGasCallBack != 0)
     {
@@ -462,9 +497,9 @@ void ReadLiveData2Response(uint8_t *dataPtr, int len)
     float gasValue2 = 0;
 
     // *** TEST ***** -print out received character for debug purpose
-    UART_sendString("ReadLiveData2Response: ");
+    DEBUG_STRING("ReadLiveData2Response: ");
     UART_sendHex(*dataPtr);
-    UART_sendString("RLD -- Stage 1\n");
+    DEBUG_STRING("RLD -- Stage 1\n");
 
     // Get the status values from the message
     uint16_t statusVal1 = (uint16_t)((dataPtr[3] * 0x100) + dataPtr[2]);
@@ -493,7 +528,7 @@ void ReadLiveData2Response(uint8_t *dataPtr, int len)
     // Call the callback routine to report the received gas reading
     if(currentMode == CommsModeRequestingLiveData2 && readDualGasCallBack != 0)
     {
-        UART_sendString("RLD2 -- Stage 2\n");
+        DEBUG_STRING("RLD2 -- Stage 2\n");
         if(statusVal1 > 0 || statusVal2 > 0)    // Any status flags set indicate an invalid value
         {
             readDualGasCallBack(READ_RESPONSE_VALUE_INVALID, gasValue1, gasValue2);
@@ -512,7 +547,7 @@ void ReadLiveData2Response(uint8_t *dataPtr, int len)
 
     currentMode = CommsModeIdle;
     readDualGasCallBack = 0;
-    UART_sendString("RLD2 -- Stage 3\n");
+    DEBUG_STRING("RLD2 -- Stage 3\n");
 }
 
 /* Function: Called when an ACK paclet is received to a previously transmitted messages e.g. a Write Variable message
@@ -550,6 +585,7 @@ void PacketTimedOut(void)
     }
     currentMode = CommsModeIdle;
     readGasCallBack = 0;
+
     Reset();
 }
 
@@ -559,7 +595,7 @@ void PacketTimedOut(void)
 void RequestLiveDataSimple(GetFloat_CallBack_t cb)
 {
 
-    SendDynamentPacket(READ_VAR, LIVE_DATA_SIMPLE, 0, 0);
+    SendDynamentPacket(READ_VAR, LIVE_DATA_SIMPLE, 0, 0); //LIVE_DATA_SIMPLE
     readGasCallBack = cb;
     currentMode = CommsModeRequestingLiveDataSimple;
 
@@ -569,8 +605,6 @@ void RequestLiveDataSimple(GetFloat_CallBack_t cb)
 //Inputs: cb - pointer to callback routine to be called when a result has been determined
 void RequestLiveData2(GetDualFloat_CallBack_t cb)
 {
-    UART_sendString("Setting readDualGasCallBack to: ");
-    UART_sendPointer((void *)cb);  // Send the callback pointer value
     //printf("Setting readDualGasCallBack to: %p\n", (void*)cb); //***TEST***
     SendDynamentPacket(READ_VAR, LIVE_DATA_2, 0,0);
     readDualGasCallBack = cb;
@@ -579,4 +613,3 @@ void RequestLiveData2(GetDualFloat_CallBack_t cb)
 }
 
 /*** end of file ***/
-

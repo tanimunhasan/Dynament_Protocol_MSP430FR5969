@@ -14,7 +14,7 @@
 void UART_sendHex(uint8_t byte);
 void UART_sendChar(char c);
 
-void UART_sendString(const char *str);
+void DEBUG_STRING(const char *str);
 
 void UART_sendFloat(float value);
 // Function to read a bybte from the circular buffer

@@ -15,34 +15,31 @@
 #include "studiolib.h"
 #include <stdarg.h>
 
-volatile uint8_t rxIndex = 0; // Index for buffer
+
 
 /* Global variables ------------------------------*/
 volatile int frameTimeout = 0;  // used to determine when a frame/packet has been received (no data received within a period of time after data has been received)
 volatile int messageTimeout = 0; // used to determine when a message has been sent but no response received
 volatile bool frameComplete = false;
 volatile bool messageTimeOut = false;
-
+volatile bool rxLock = false;
 volatile uint16_t g_uiCommsTimeout  = 0;
 uint8_t RX_Buffer[P2P_BUFFER_SIZE] __attribute__((aligned(16)));
-volatile uint16_t head = 0;  // Define it ONCE here
-volatile uint16_t tail = 0;  // Define it ONCE here
+volatile uint16_t rxHead = 0;  // Define it ONCE here
+volatile uint16_t rxTail = 0;  // Define it ONCE here
+volatile uint16_t rxCount = 0;
 
 
 
 
 #pragma vector=TIMER1_A0_VECTOR
-__interrupt void Timer_A1_ISR(void)
+__interrupt void Timer1_A0_ISR(void)
 {
-    if (g_uiCommsTimeout > 0)
-    {
-        g_uiCommsTimeout--;
-    }
-
+    // Handle 10ms based timeouts (same as pico style)
     if (frameTimeout > 0)
     {
-        --frameTimeout;
-        if (frameTimeout <= 0)
+        frameTimeout--;
+        if (frameTimeout == 0)
         {
             frameComplete = true;
         }
@@ -50,45 +47,36 @@ __interrupt void Timer_A1_ISR(void)
 
     if (messageTimeout > 0)
     {
-        --messageTimeout;
-        if (messageTimeout <= 0)
+        messageTimeout--;
+        if (messageTimeout == 0)
         {
             messageTimeOut = true;
         }
     }
+
 }
+
 
 
 #pragma vector=USCI_A1_VECTOR
 __interrupt void USCI_A1_ISR(void)
 {
-    if (UCA1IFG & UCRXIFG)
+    switch(__even_in_range(UCA1IV, USCI_UART_UCTXIFG))
     {
-        uint8_t receivedByte = UCA1RXBUF;
+    case USCI_NONE: break;
+    case USCI_UART_UCRXIFG:
+        rxLock = true;
 
-        // Debugging Output
-        UART_sendString("ISR Received: ");
-        UART_sendHex(receivedByte);
-        UART_sendString("\n");
+        RX_Buffer[rxHead++] = UCA1RXBUF;
+        if (rxHead >= P2P_BUFFER_SIZE)
+            rxHead = 0;
 
-        // Calculate next buffer position
-        uint16_t nextPut = (tail + 1) % P2P_BUFFER_SIZE;
-
-        if (nextPut != head)  // Ensure buffer is not full
-        {
-            RX_Buffer[tail] = receivedByte;
-            tail = nextPut;
-        }
-        else
-        {
-            // Buffer Overflow
-            UART_sendString("Buffer Overflow!\n");
-        }
-
-        UCA1IFG &= ~UCRXIFG;  // Clear RX flag
+        rxCount++;
+        rxLock = false;
+        break;
+    case USCI_UART_UCTXIFG: break;
     }
 }
-
 
 
 
@@ -119,11 +107,11 @@ uint8_t p2pRxByte(uint8_t* pucData)
 {
     uint8_t ucStatus = 0;
 
-    if (head != tail) {
-        *pucData = RX_Buffer[head++];
+    if (rxHead != rxTail) {
+        *pucData = RX_Buffer[rxHead++];
 
-        if (P2P_BUFFER_SIZE == head  ) {
-            head = 0;
+        if (P2P_BUFFER_SIZE == rxHead  ) {
+            rxHead = 0;
         }
         else
         {
@@ -143,46 +131,37 @@ uint8_t p2pRxByte(uint8_t* pucData)
 
 /* TEST  */
 
-uint8_t p2pRxByte(uint8_t* pucData)
+uint8_t p2pRxByte(uint8_t* data)
 {
-    uint8_t ucStatus = 0;
+    while (rxLock);  // wait until ISR is not updating
 
-    if (head != tail)  // Check if buffer has data
-    {
-        *pucData = RX_Buffer[head++];
+    if (rxCount == 0)
+        return p2pRxNone;
 
-        if (head >= P2P_BUFFER_SIZE) {
-            head = 0;  // Wrap around
-        }
+    *data = RX_Buffer[rxTail++];
+    if (rxTail >= P2P_BUFFER_SIZE)
+        rxTail = 0;
 
-        ucStatus = p2pRxOk;
-        UART_sendString("p2pRxByte Retrieved: ");
-        UART_sendHex(*pucData);
-        UART_sendString("\n");
-    }
-    else
-    {
-        ucStatus = p2pRxNone;
-        UART_sendString("p2pRxByte: No Data\n");
-    }
-
-    return ucStatus;
+    rxCount--;
+    return p2pRxOk;
 }
+
+
 /* TEST  */
 
-
-/*
-uint8_t UART_Read(void)
+uint8_t readByte(void)
 {
-    if (head == tail)
+    if (rxHead == rxTail)
     {
         // Buffer is empty
-        UART_sendString("UART_Read: Buffer Empty!\n");
+        DEBUG_STRING("UART_Read: Buffer Empty!\n");
         return 0xFF; // Return a special value indicating "no data"
     }
-    uint8_t data = RX_Buffer[head];
-    head = (head + 1) % P2P_BUFFER_SIZE;
+    uint8_t data = RX_Buffer[rxTail];
+    rxTail = (rxTail + 1) % P2P_BUFFER_SIZE;
+    DEBUG_STRING("DATA: ");
+    printInt(data);
+    DEBUG_STRING("\n");
     return data;
 }
-*/
 

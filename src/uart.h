@@ -2,7 +2,7 @@
  * uart.h
  *
  *  Created on: 27 Mar 2025
- *      Author: tanim
+ *      Author: Sayed
  */
 
 #ifndef SRC_UART_H_

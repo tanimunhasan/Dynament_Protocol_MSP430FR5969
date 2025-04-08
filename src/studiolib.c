@@ -18,7 +18,7 @@ void UART_sendChar(char c)
     UCA0TXBUF = c;
 }
 
-void UART_sendString(const char *str)
+void DEBUG_STRING(const char *str)
 {
     while (*str)
     {
@@ -30,7 +30,7 @@ void UART_sendFloat(float value)
 {
     char buffer[20];
     snprintf(buffer, sizeof(buffer), "%.2f", value);
-    UART_sendString(buffer);
+    DEBUG_STRING(buffer);
 }
 
 void UART_sendHex(uint8_t byte)
@@ -48,7 +48,7 @@ void UART_sendHex(uint8_t byte)
     hexBuffer[2] = '\0';
 
     // Send the two characters over UART (one at a time)
-    UART_sendString(hexBuffer);
+    DEBUG_STRING(hexBuffer);
 }
 
 void UART_sendPointer(void *ptr)
@@ -62,7 +62,7 @@ void UART_sendPointer(void *ptr)
     }
 
     // Optionally, send a newline or other separator to make it easier to read
-    UART_sendString("\n");
+    DEBUG_STRING("\n");
 }
 
 void printInt(int num) {

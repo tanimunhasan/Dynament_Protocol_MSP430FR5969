@@ -13,9 +13,9 @@
  * main.c
  * Considering 1MHz
  */
-#define POLL_COUNT              10
+#define POLL_COUNT              4
 volatile int pollCounter = POLL_COUNT;  // Define pollCounter
-
+volatile bool readyToPoll = true;
 #define WATCHDOG_INTERVAL_MS    1000    // Define the watchdog timer interval in milliseconds (e.g., 1000 ms)
 
 void clockConfigure(void)
@@ -29,7 +29,7 @@ void clockConfigure(void)
 
 void Timer_Init(void)
 {
-    TA0CCR0 = 62500;             // 1 second (assuming 1MHz / 16)
+    TA0CCR0 = 65535;             // 1 second (assuming 1MHz / 16)
     TA0CCTL0 = CCIE;             // Enable CCR0 interrupt
     TA0CTL = TASSEL_2 | MC_1 | TACLR | ID_3; // SMCLK, Up mode, /8 divider
 }
@@ -37,7 +37,7 @@ void Timer_Init(void)
 void Timer1_A_Setup(void)
 {
     TA1CCTL0 = CCIE;         // Enable Timer1_A interrupt
-    TA1CCR0 = 1000;          // 1 ms interval (1 MHz / 1000 = 1ms)
+    TA1CCR0 = 10000;          // 1 ms interval (1 MHz / 1000 = 1ms)
     TA1CTL = TASSEL_2 | MC_1 | ID_0 | TACLR;  // SMCLK (1 MHz), Up mode, No divider, Clear timer
 }
 
@@ -48,7 +48,7 @@ volatile bool timerFlag = false;
 //--------------------------------------------------------------------------
 // Function Prototypes
 //--------------------------------------------------------------------------
-void RequestGasReading(void);
+
 void ReadingReceived(int status, float value);
 void DualReadingReceived(int status, float reading1, float reading2);
 void Watchdog(void);
@@ -62,7 +62,12 @@ extern void ModbusCommsHandler(void);
 extern void RequestLiveData2(void (*cb)(int, float, float));
 
 
+void initialise_comms(void)
+{
+    Timer_Init();
+    rxHead = rxTail = 0;
 
+}
 void active_all()
 {
     clockConfigure();
@@ -71,9 +76,9 @@ void active_all()
     initREDLED();
 
 
-    Timer_Init();
+    //Timer_Init();
     Timer1_A_Setup();
-    UART_sendString("Main Code Running!r\n");
+    DEBUG_STRING("Main Code Running!r\n");
 
 }
 
@@ -94,6 +99,7 @@ void Watchdog_Init(void)
 
 // Function to refresh (clear) the watchdog timer to prevent reset
 void Watchdog_Refresh(void)
+
 {
     // Clear the Watchdog Timer to prevent a reset
     WDTCTL = WDTPW + WDTCNTCL; // Clear the Watchdog Timer
@@ -113,19 +119,20 @@ __interrupt void WDT_ISR(void)
 //--------------------------------------------------------------------------
 void RequestGasReading(void)
 {
-    // For debugging: output via UART (if available)
-    UART_sendString("RequestGasReading called\n");
+
+    DEBUG_STRING("RequestGasReading called\n");
+
 
     if (COMMS_PROTOCOL == DYNAMENT_PROTOCOL)
     {
-        UART_sendString("Using Dynament_Protocol\n");
+        DEBUG_STRING("Using Dynament_Protocol\n");
         // Request dual reading; callback function DualReadingReceived will be called
         RequestLiveData2(DualReadingReceived);
-        UART_sendString("RequstedLiveData2 passed\n");
+        DEBUG_STRING("RequstedLiveData2 passed\n");
     }
     else
     {
-        UART_sendString("Using Modbus Protocol\n");
+        DEBUG_STRING("Using Modbus Protocol\n");
         // Request a measurand reading; callback ReadingReceived will be called
         ReadMeasurand(GAS_READING_MEASURAND, ReadingReceived);
     }
@@ -139,16 +146,18 @@ void ReadingReceived(int status, float value)
     if (status == READ_RESPONSE_VALUE_VALID)
     {
         // Process the valid gas reading (value) here
-        UART_sendString("ReadingReceived: Valid reading: ");
-        UART_sendFloat(value);
-        UART_sendString("r\n");
+        DEBUG_STRING("ReadingReceived: Valid reading: ");
+        printInt(value);
+        DEBUG_STRING("r\n");
     }
     else
     {
-        UART_sendString("ReadingReceived: Invalid reading, status=%d\n");
-        UART_sendFloat(status);
-        UART_sendString("\n");
+        DEBUG_STRING("ReadingReceived: Invalid reading\n");
+        printInt(status);
+        DEBUG_STRING("\n");
     }
+    readyToPoll = true;  // Now we can send a new request
+
 }
 
 //--------------------------------------------------------------------------
@@ -156,7 +165,7 @@ void ReadingReceived(int status, float value)
 //--------------------------------------------------------------------------
 void DualReadingReceived(int status, float reading1, float reading2)
 {
-    UART_sendString("DualReadingReceived DRR\n");
+    DEBUG_STRING("DualReadingReceived DRR\n");
     if (status == READ_RESPONSE_VALUE_VALID)
     {
         //printf("DualReadingReceived: Status=%d, Gas1=%f, Gas2=%f\n", status, reading1, reading2);
@@ -164,24 +173,26 @@ void DualReadingReceived(int status, float reading1, float reading2)
         //uart_write_blocking(ESP_UART_ID, (const uint8_t *)&reading1, sizeof(reading1));
         //printf("Sent Successfully to ESP32\n");
 
-        UART_sendString("Callback Executed:  Status =");
+        DEBUG_STRING("Callback Executed:  Status =");
         printInt(status);
 
-        UART_sendString("Gas1 = ");
+        DEBUG_STRING("Gas1 = ");
         UART_sendFloat(reading1);
-        UART_sendString("Gas2 =");
+        DEBUG_STRING("Gas2 =");
         UART_sendFloat(reading2);
-        UART_sendString("\n");
+        DEBUG_STRING("\n");
     }
     else
     {
         //printf("DualReadingReceived: Invalid reading, status=%d\n", status);
-        UART_sendString("Invalid reading, status =");
+        DEBUG_STRING("Invalid reading, status =");
         char buffer[10];
         snprintf(buffer,sizeof(buffer),"%d", status);
-        UART_sendString(buffer);
-        UART_sendString("\n");
+        DEBUG_STRING(buffer);
+        DEBUG_STRING("\n");
     }
+    readyToPoll = true;  // Now we can send a new request
+
 }
 
 
@@ -197,16 +208,16 @@ __interrupt void USCI_A1_ISR(void)
         uint8_t receivedByte = UCA1RXBUF;
 
         // Check for Buffer Overflow Before Storing Data
-        uint16_t nextPut = (tail + 1) % P2P_BUFFER_SIZE;
-        if (nextPut != head)  // Ensure buffer is not full
+        uint16_t nextPut = (rxTail + 1) % P2P_BUFFER_SIZE;
+        if (nextPut != rxHead)  // Ensure buffer is not full
         {
-            RX_Buffer[tail] = receivedByte;
-            tail = nextPut;
+            RX_Buffer[rxTail] = receivedByte;
+            rxTail = nextPut;
         }
         else
         {
             // Buffer Overflow Detected - Handle It (Maybe log an error or clear the buffer)
-            UART_sendString("Buffer Overflow!\n");
+            DEBUG_STRING("Buffer Overflow!\n");
         }
 
         // Debug Output: Accumulate received bytes into a full packet
@@ -214,20 +225,20 @@ __interrupt void USCI_A1_ISR(void)
         if (receivedByte == EOF || receivedByte == DLE)  // Assuming EOF or DLE indicates end of packet
         {
             // Print the entire packet
-            UART_sendString("Full Packet Received: ");
+            DEBUG_STRING("Full Packet Received: ");
 
             // Assuming the buffer is full, print the entire packet
-            uint16_t idx = head;
-            while (idx != tail)  // While there are unread bytes
+            uint16_t idx = rxHead;
+            while (idx != rxTail)  // While there are unread bytes
             {
                 UART_sendHex(RX_Buffer[idx]);
                 idx = (idx + 1) % P2P_BUFFER_SIZE;
             }
 
-            UART_sendString(" <Rx End>\n");
+            DEBUG_STRING(" <Rx End>\n");
 
             // Optional: Reset buffer indices if necessary
-            head = tail;  // Mark buffer as processed
+            rxHead = rxTail;  // Mark buffer as processed
         }
 
         // Clear RX flag to complete the interrupt
@@ -244,22 +255,22 @@ __interrupt void USCI_A1_ISR(void)
         uint8_t receivedByte = UCA1RXBUF;
 
         // Check for Buffer Overflow Before Storing Data
-        uint16_t nextPut = (tail + 1) % P2P_BUFFER_SIZE;
-        if (nextPut != head)  // Ensure buffer is not full
+        uint16_t nextPut = (rxTail + 1) % P2P_BUFFER_SIZE;
+        if (nextPut != rxHead)  // Ensure buffer is not full
         {
-            RX_Buffer[tail] = receivedByte;
-            tail = nextPut;
+            RX_Buffer[rxTail] = receivedByte;
+            rxTail = nextPut;
         }
         else
         {
             // Buffer Overflow Detected - Handle It (Maybe log an error or clear the buffer)
-            UART_sendString("Buffer Overflow!\n");
+            DEBUG_STRING("Buffer Overflow!\n");
         }
 
         // Debug Output
-        UART_sendString("Byte Received in ISR: ");
+        DEBUG_STRING("Byte Received in ISR: ");
         UART_sendHex(receivedByte);
-        UART_sendString("\n");
+        DEBUG_STRING("\n");
 
         UCA1IFG &= ~UCRXIFG;  // Clear RX flag
     }
@@ -278,13 +289,13 @@ __interrupt void USCI_A1_ISR(void)
     if (UCA1IFG & UCRXIFG)  // Check if RX flag is set
     {
         uint8_t receivedByte = UCA1RXBUF;  // Read received byte
-        UART_sendString("Byte Received in ISR: ");
+        DEBUG_STRING("Byte Received in ISR: ");
         UART_sendHex(receivedByte);
-        UART_sendString("\n");
+        DEBUG_STRING("\n");
 
         // Store in buffer if needed
-        RX_Buffer[tail] = receivedByte;
-        tail = (tail + 1) % P2P_BUFFER_SIZE;
+        RX_Buffer[rxTail] = receivedByte;
+        rxTail = (rxTail + 1) % P2P_BUFFER_SIZE;
 
         // **Clear RX flag to prevent repeated interrupts**
         UCA1IFG &= ~UCRXIFG;
@@ -297,19 +308,19 @@ __interrupt void USCI_A1_ISR(void)
 __interrupt void Timer_A0_ISR(void)
 {
     P4OUT ^= BIT6;  // Toggle LED to indicate ISR is running
-
-    if (pollCounter > 0)
+    static int pollTicks = 0;
+    pollTicks++;
+    if (pollTicks >= 8) // Every 2 seconds
     {
-        --pollCounter;
-        if (pollCounter <= 0)
-        {
-            RequestGasReading();  // Send request to sensor (UART)
+        pollTicks = 0;
 
-            pollCounter = POLL_COUNT;
+        if (readyToPoll)
+        {
+            RequestGasReading();
         }
     }
-
 }
+
 
 void main(void)
 {
@@ -319,22 +330,21 @@ void main(void)
     active_all();
 
     __bis_SR_register(GIE); // Enable global interrupts
-    __enable_interrupt();
-    Watchdog_Init();
+
 
     // Initialize communications
-
+    initialise_comms();
     if (COMMS_PROTOCOL == DYNAMENT_PROTOCOL)
     {
         InitialiseDynamentComms();
     }
 
     // Main loop
-    for( ; ;)
+    for(;;)
     {
-        Watchdog_Refresh();
 
-        //UART_sendString("System Running!\r\n");
+
+        //DEBUG_STRING("System Running!\r\n");
 
         if (COMMS_PROTOCOL == DYNAMENT_PROTOCOL)
         {
@@ -344,7 +354,8 @@ void main(void)
         {
             ModbusCommsHandler();
         }
-        delay_ms(500);
+
+
     }
 
 }
